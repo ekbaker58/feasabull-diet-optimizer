@@ -526,6 +526,7 @@ arr(DC, f'C{NR+1}:{LC}{NR+len(NUTS)}', f"=MMULT('Matrix Model'!{FA}{R_A0}:{FZ}{R
 QR = NR + len(NUTS) + 2
 put(DC, f'A{QR}', 'Targets the plan misses (example person, each diet\'s own macro split)', bold=True, size=11)
 dnames = [d['name'] for d in DIETS] + ['Balanced']
+FATMAX = {L(3+k): f'Diets!$H${5+k}' for k in range(len(DIETS))}   # each diet's own fat max; typical day falls back to AMDR 35%
 checks = [('Calories in ±5%', lambda c: f'OR({c}{NR+1}<{EX["calories"]}*0.95-0.5,{c}{NR+1}>{EX["calories"]}*1.05+0.5)'),
           (f'Protein ≥ {EX["proteinMin"]} g', lambda c: f'{c}{NR+2}<{EX["proteinMin"]}-0.01'),
           (f'Fiber ≥ {EX["fiber"]} g', lambda c: f'{c}{NR+5}<{EX["fiber"]}-0.01'),
@@ -533,7 +534,7 @@ checks = [('Calories in ±5%', lambda c: f'OR({c}{NR+1}<{EX["calories"]}*0.95-0.
           (f'Potassium ≥ {EX["potassium"]:,} mg', lambda c: f'{c}{NR+9}<{EX["potassium"]}-0.01'),
           (f'Vitamin C ≥ {EX["vitc"]} mg', lambda c: f'{c}{NR+11}<{EX["vitc"]}-0.01'),
           (f'Sodium ≤ {EX["sodium"]:,} mg', lambda c: f'{c}{NR+10}>{EX["sodium"]}+0.01'),
-          ('Fat ≤ 35% of calories (AMDR; Low-Carb allows 50%)', lambda c: f'{c}{NR+4}*9>{c}{NR+1}*0.35+0.01')]
+          ('Fat ≤ diet\'s fat max (Diets sheet; typical day: AMDR 35%)', lambda c: f'{c}{NR+4}*9>{c}{NR+1}*{FATMAX.get(c, 0.35)}+0.01')]
 for i, (lab, fn) in enumerate(checks):
     r = QR + 1 + i
     put(DC, f'B{r}', lab, box=True)
@@ -543,12 +544,15 @@ for i, (lab, fn) in enumerate(checks):
 DC.conditional_formatting.add(f'C{QR+1}:{LC}{QR+len(checks)}', FormulaRule(formula=[f'C{QR+1}="MISSED"'], fill=BADF, font=Font(color='C00000', bold=True)))
 IR = QR + len(checks) + 2
 put(DC, f'A{IR}', 'What this shows', bold=True, size=11)
-same = [d['name'] for d in DIETS if SOL[d['name']]['cost'] is not None and abs(SOL[d['name']]['cost'] - SOL['Balanced']['cost']) < 0.005]
+BC = SOL['Balanced']['cost']
+same = [d['name'] for d in DIETS if SOL[d['name']]['cost'] is not None and abs(SOL[d['name']]['cost'] - BC) < 1e-6]   # exact ties
+gf_gap = SOL['Gluten-Free']['cost'] - BC
 insights = [
     f"• Example person (from the calculator): {EXP['sex']}, {EXP['age']}, {EXP['heightCm']} cm, {EXP['weightKg']} kg, {EXP['activity']}, {EXP['goal']} -> "
     f"{EX['calories']:,} kcal, protein ≥ {EX['proteinMin']} g, fiber ≥ {EX['fiber']} g.",
     f"• The optimized Balanced day costs ${SOL['Balanced']['cost']:.2f} and meets every target; the typical day costs more and misses several targets (red cells).",
-    f"• {', '.join(same)} give the same cost: at these prices the cheapest balanced day already avoids meat, so excluding it costs nothing. "
+    f"• {', '.join(same[:-1])} and {same[-1]} tie exactly (${BC:.4f}/day): at these prices the cheapest balanced day already avoids meat, so excluding it costs nothing. "
+    f"Gluten-Free is ${gf_gap:.3f} higher (${BC + gf_gap:.4f}) because it also excludes oats. "
     'Plant proteins (beans, peanut butter) and eggs cost far less per gram of protein than meat.',
     '• High-Protein and Low-Carb cost more because they force more protein (or fat) per calorie, which pulls in pricier foods.',
     '• Each column of X is a separate Simplex solve; A·X then evaluates every diet against every nutrient in one matrix multiplication.']
@@ -750,8 +754,8 @@ lines = [
  ('• Removed from v1: flour and sugar (ingredients, not foods eaten alone — the v1 optimizer chose raw flour).', False),
  ('', False),
  ('References (APA 7)', True),
- ('U.S. Department of Agriculture, Agricultural Research Service, Nutrient Data Laboratory. (2015). USDA National Nutrient Database for Standard Reference, Release 28 [Data set]. http://www.ars.usda.gov/nea/bhnrc/ndl', False),
- ('U.S. Department of Agriculture, Agricultural Research Service. (2019). FoodData Central: SR Legacy [Data set]. https://fdc.nal.usda.gov/', False),
+ ('U.S. Department of Agriculture, Agricultural Research Service, Nutrient Data Laboratory. (2015). USDA National Nutrient Database for Standard Reference, Release 28 [Data set]. https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/beltsville-human-nutrition-research-center/methods-and-application-of-food-composition-laboratory/mafcl-site-pages/sr11-sr28/', False),
+ ('U.S. Department of Agriculture, Agricultural Research Service. (2018). FoodData Central: SR Legacy [Data set]. https://fdc.nal.usda.gov/', False),
  ('U.S. Bureau of Labor Statistics. (2026). Average retail food and energy prices, U.S. and Midwest region [Data table]. https://www.bls.gov/regions/mid-atlantic/data/averageretailfoodandenergyprices_usandmidwest_table.htm', False),
  ('Walmart Inc. (2026, October 26). Product listings for the foods in Food Data [Retail prices]. https://www.walmart.com/ and https://business.walmart.com/', False),
  ('U.S. Department of Agriculture & U.S. Department of Health and Human Services. (2020). Dietary guidelines for Americans, 2020–2025 (9th ed.). https://www.dietaryguidelines.gov/', False),
