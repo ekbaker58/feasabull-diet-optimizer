@@ -1,7 +1,8 @@
 // Solve the example person for every diet and write tests/out/diets.json (used by the workbook + HiGHS check).
 import { optimizeDiet, buildModel, DIETS } from '../src/lib/dietOptimizer.js';
 import { writeFileSync, mkdirSync } from 'fs';
-export const EXAMPLE = { calories: 2600, fiber: 38, calcium: 1000, iron: 8, potassium: 3400, vitc: 90, sodium: 2300 };
+import { EXAMPLE, EXAMPLE_PERSON } from './example_person.mjs';
+console.log('example person', EXAMPLE_PERSON, '-> targets', EXAMPLE);
 mkdirSync(new URL('./out/', import.meta.url), { recursive: true });
 const out = {};
 for (const d of DIETS) {
@@ -17,3 +18,4 @@ for (const d of DIETS) {
   for (const ml of r.meals) console.log(`  ${ml.meal.padEnd(9)} ${ml.kcal.toFixed(0).padStart(5)} kcal ${ml.protein.toFixed(0).padStart(4)} g P  | ` + ml.items.map(i => `${i.name} ${i.grams.toFixed(0)}g`).join(', '));
 }
 writeFileSync(new URL('./out/diets.json', import.meta.url), JSON.stringify(out));
+writeFileSync(new URL('./out/example.json', import.meta.url), JSON.stringify({ person: EXAMPLE_PERSON, targets: EXAMPLE }));

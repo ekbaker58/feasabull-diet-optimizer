@@ -21,7 +21,9 @@ TYP = json.loads(subprocess.check_output(['node', '-e', "import('./tests/typical
 FOODS, NUTS, DIETS, MEALS, S = D['foods'], D['nutrients'], D['diets'], D['meals'], D['settings']
 ATTRS, CAPS = D['attrs'], D['group_caps']
 NF = len(FOODS); IDS = [f['id'] for f in FOODS]; NK = [n['key'] for n in NUTS]
-EX = dict(calories=2600, proteinMin=0, fiber=38, calcium=1000, iron=8, potassium=3400, vitc=90, sodium=2300)
+EXJ = json.load(open(os.path.join(ROOT, 'tests', 'out', 'example.json')))
+EX, EXP = EXJ['targets'], EXJ['person']
+EXF = dict(ft=5, inch=8, lb=155)   # example person as typed into the site's form (tests/example_person.mjs)
 
 # ---------------------------------------------------------------- styles
 BLUE, BLACK, GREEN, WHITE = '0000FF', '000000', '008000', 'FFFFFF'
@@ -73,45 +75,130 @@ def pin(row, key, label, val, fmt='#,##0', note=None, col='C'):
     P[key] = f"Planner!${col}${row}"
     return c
 
-title(PL, 'FeasaBULL Diet Planner — cheapest balanced day for one person',
-      'Enter the person\'s numbers from the FeasaBULL calculator, pick a diet, then re-solve (box at right). Blue = inputs.')
-put(PL, 'B4', '1. PERSON  (from the FeasaBULL calculator)', bold=True, size=11)
-pin(5, 'kcal', 'Calorie target (kcal/day)', EX['calories'])
-pin(6, 'pfloor', 'Protein floor (g/day, optional)', 0, note='e.g. 0.8 g per kg body weight; 0 = use diet split only')
-pin(7, 'fiber', 'Fiber minimum (g)', EX['fiber'])
-pin(8, 'calcium', 'Calcium minimum (mg)', EX['calcium'])
-pin(9, 'iron', 'Iron minimum (mg)', EX['iron'])
-pin(10, 'potassium', 'Potassium minimum (mg)', EX['potassium'])
-pin(11, 'vitc', 'Vitamin C minimum (mg)', EX['vitc'])
-pin(12, 'sodium', 'Sodium maximum (mg)', EX['sodium'])
-pin(13, 'sugar', 'Total sugars maximum (g, optional)', None, note='leave blank for no limit')
-put(PL, 'B14', 'Example person: male, 19–30, active, maintain weight (DRI values). Replace with each user\'s calculator output.', italic=True)
+title(PL, 'FeasaBULL Diet Planner — person in, cheapest balanced day out',
+      'Step 1: enter the person (same inputs as FeasaBULL Calories). Step 2: targets are calculated with the site\'s equations. '
+      'Step 3: pick a diet and re-solve (box at right). Blue = inputs.')
+DT = wb.create_sheet('DRI Tables', 1)
+# ---------------------------------------------------------------- DRI Tables sheet (lookup data for the person calculator)
+title(DT, 'DRI Tables — the numbers behind the person calculator',
+      'Same values as the FeasaBULL Calories site. Activity coefficients: IOM (2005) EER equations, healthy-weight version.')
+for i, h in enumerate(['Group', 'Inactive', 'Low active', 'Active', 'Very active']): head(DT, f'{L(1+i)}4', h)
+PA_ROWS = [('Men 19+', [1, 1.11, 1.25, 1.48]), ('Women 19+', [1, 1.12, 1.27, 1.45]), ('Boys 14–18', [1, 1.13, 1.26, 1.42]), ('Girls 14–18', [1, 1.16, 1.31, 1.56])]
+for k, (lab, vals) in enumerate(PA_ROWS):
+    put(DT, f'A{5+k}', lab, bold=True, box=True)
+    for j, v in enumerate(vals): put(DT, f'{L(2+j)}{5+k}', v, BLUE, fmt='0.00', box=True)
+put(DT, 'A9', 'IOM 2005 values (used by default). Below: what the live FeasaBULL site uses today (men\'s values for everyone).', italic=True)
+for i, h in enumerate(['Group (site)', 'Inactive', 'Low active', 'Active', 'Very active']): head(DT, f'{L(1+i)}10', h)
+SITE_ROWS = [('Men 19+', PA_ROWS[0][1]), ('Women 19+', PA_ROWS[0][1]), ('Boys 14–18', PA_ROWS[2][1]), ('Girls 14–18', PA_ROWS[2][1])]
+for k, (lab, vals) in enumerate(SITE_ROWS):
+    put(DT, f'A{11+k}', lab, bold=True, box=True)
+    for j, v in enumerate(vals): put(DT, f'{L(2+j)}{11+k}', v, BLUE, fmt='0.00', box=True)
+for i, h in enumerate(['Goal', 'kcal change']): head(DT, f'{L(1+i)}16', h)
+for k, (lab, v) in enumerate([('Lose fat', -500), ('Maintain', 0), ('Build muscle', 350)]):
+    put(DT, f'A{17+k}', lab, bold=True, box=True); put(DT, f'B{17+k}', v, BLUE, fmt='+0;-0;0', box=True)
+put(DT, 'D16', 'Calorie floor', bold=True); put(DT, 'D17', 'Male'); put(DT, 'E17', 1500, BLUE); put(DT, 'D18', 'Female'); put(DT, 'E18', 1200, BLUE)
+DRI_H = ['Age bracket', 'Ages', 'Vit C (M)', 'Vit C (F)', 'Calcium (M)', 'Calcium (F)', 'Iron (M)', 'Iron (F)', 'Potassium (M)', 'Potassium (F)']
+for i, h in enumerate(DRI_H): head(DT, f'{L(1+i)}22', h)
+DRI_ROWS = [('teen', '14–18', 75, 65, 1300, 1300, 11, 15, 3000, 2300), ('young', '19–30', 90, 75, 1000, 1000, 8, 18, 3400, 2600),
+            ('mid', '31–50', 90, 75, 1000, 1000, 8, 18, 3400, 2600), ('older', '51–70', 90, 75, 1000, 1200, 8, 8, 3400, 2600),
+            ('oldest', '71+', 90, 75, 1200, 1200, 8, 8, 3400, 2600)]
+for k, row_ in enumerate(DRI_ROWS):
+    for j, v in enumerate(row_): put(DT, f'{L(1+j)}{23+k}', v, BLUE if j >= 2 else BLACK, bold=j == 0, box=True, fmt='#,##0' if j >= 2 else None)
+put(DT, 'A29', 'Units: vitamin C, calcium, potassium in mg; iron in mg. Fiber = 14 g per 1,000 kcal. Sodium: keep under 2,300 mg.', italic=True)
+DT.column_dimensions['A'].width = 16
+for c in 'BCDEFGHIJ': DT.column_dimensions[c].width = 12
 
-put(PL, 'B16', '2. DIET & PRICES', bold=True, size=11)
-pin(17, 'diet', 'Diet', 'Balanced', fmt='@')
-PL['C17'].fill = YELLOW
-put(PL, 'B18', 'What it means', box=True)
-put(PL, 'C18', f"=INDEX(Diets!$B$5:$B${4+len(DIETS)},MATCH({P['diet']},Diets!$A$5:$A${4+len(DIETS)},0))", box=True, al=WRAP)
-put(PL, 'B19', 'Macro split (% of calories)', box=True)
-put(PL, 'C19', '="Protein "&TEXT(\'Matrix Model\'!$C$8,"0%")&"–"&TEXT(\'Matrix Model\'!$D$8,"0%")&", Carbs "&TEXT(\'Matrix Model\'!$C$9,"0%")&"–"&TEXT(\'Matrix Model\'!$D$9,"0%")&", Fat "&TEXT(\'Matrix Model\'!$C$10,"0%")&"–"&TEXT(\'Matrix Model\'!$D$10,"0%")', box=True)
-pin(20, 'psrc', 'Price source', 'Walmart (Oct 2026)', fmt='@', note='or "BLS U.S. average (Sep 2026)" — sensitivity check')
-dv = DataValidation(type='list', formula1=f"=Diets!$A$5:$A${4+len(DIETS)}", allow_blank=False); PL.add_data_validation(dv); dv.add('C17')
-dv2 = DataValidation(type='list', formula1='"Walmart (Oct 2026),BLS U.S. average (Sep 2026)"'); PL.add_data_validation(dv2); dv2.add('C20')
+# ---------------------------------------------------------------- 1. PERSON
+put(PL, 'B4', '1. PERSON  (same inputs as the FeasaBULL Calories site)', bold=True, size=11)
+def pv(row, key, label, val, fmt=None, note=None):
+    put(PL, f'B{row}', label, box=True); c = put(PL, f'C{row}', val, BLUE, fmt=fmt, box=True, fl=YELLOW if isinstance(val, str) else None)
+    if note: put(PL, f'D{row}', note, italic=True)
+    P[key] = f'Planner!$C${row}'
+    return c
+pv(5, 'sex', 'Sex', 'Male'); pv(6, 'age', 'Age (years)', EXP['age'], fmt='0')
+put(PL, 'B7', 'Height (ft, in)', box=True); put(PL, 'C7', EXF['ft'], BLUE, fmt='0" ft"', box=True); put(PL, 'D7', EXF['inch'], BLUE, fmt='0" in"', box=True)
+P['ft'], P['inch'] = 'Planner!$C$7', 'Planner!$D$7'
+pv(8, 'lb', 'Weight (lb)', EXF['lb'], fmt='0.0'); pv(9, 'act', 'Activity level', 'Active'); pv(10, 'goal', 'Goal', 'Maintain')
+pv(11, 'coef', 'Activity coefficients', 'IOM 2005 (corrected)', note='or "Same as current site" to reproduce the live site exactly')
+for ref, lst in (('C5', '"Male,Female"'), ('C9', '"Inactive,Low active,Active,Very active"'), ('C10', '"Lose fat,Maintain,Build muscle"'),
+                 ('C11', '"IOM 2005 (corrected),Same as current site"')):
+    dvx = DataValidation(type='list', formula1=lst, allow_blank=False); PL.add_data_validation(dvx); dvx.add(ref)
+put(PL, 'B12', 'Example: the site\'s own placeholder person (male, 21, 5\'8", 155 lb, active, maintain).', italic=True)
 
-put(PL, 'B22', '3. BALANCE RULES  (keep amounts realistic)', bold=True, size=11)
-pin(23, 'tol', 'Calorie tolerance (±)', S['calorie_tolerance'], fmt='0%')
-pin(24, 'alpha', 'Max share of the day\'s protein from ONE food', S['max_protein_share'], fmt='0%', note='applies to foods with ≥ 10 g protein / 100 g')
-pin(25, 'beta', 'Min share of protein at breakfast, lunch AND dinner', S['min_meal_protein_share'], fmt='0%')
-row = 26
+# working values (rows 27-33), referenced by the targets
+W = {}
+put(PL, 'B26', 'How the targets were calculated', bold=True)
+work = [('cm', 'Height (cm)', f'=ROUND(({P["ft"]}*12+N({P["inch"]}))*2.54,0)', '0'),
+        ('kg', 'Weight (kg)', f'=ROUND({P["lb"]}*0.45359237,1)', '0.0'),
+        ('bracket', 'Age bracket', f'=IF({P["age"]}<19,"teen",IF({P["age"]}<=30,"young",IF({P["age"]}<=50,"mid",IF({P["age"]}<=70,"older","oldest"))))', None),
+        ('pa', 'Activity coefficient (PA)', None, '0.00'),
+        ('maint', 'Maintenance calories (IOM EER, rounded to 10)', None, '#,##0'),
+        ('delta', 'Goal adjustment (kcal)', f'=INDEX(\'DRI Tables\'!$B$17:$B$19,MATCH({P["goal"]},\'DRI Tables\'!$A$17:$A$19,0))', '+0;-0;0'),
+        ('bmi', 'BMI', None, '0.0')]
+for k, (key, lab, f, fmt) in enumerate(work):
+    r = 27 + k; W[key] = f'$C${r}'
+    put(PL, f'B{r}', lab, box=True); put(PL, f'C{r}', f, fmt=fmt, box=True)
+pa_row = f'IF({P["age"]}<19,IF({P["sex"]}="Male",3,4),IF({P["sex"]}="Male",1,2))'
+pa_col = f'MATCH({P["act"]},\'DRI Tables\'!$B$4:$E$4,0)'
+PL[W['pa'].replace('$', '')] = (f'=IF({P["coef"]}="Same as current site",INDEX(\'DRI Tables\'!$B$11:$E$14,{pa_row},{pa_col}),'
+                                f'INDEX(\'DRI Tables\'!$B$5:$E$8,{pa_row},{pa_col}))')
+m_, kg_, a_, pa_ = f'({W["cm"]}/100)', W['kg'], P['age'], W['pa']
+eer = (f'IF({a_}<19,IF({P["sex"]}="Male",88.5-61.9*{a_}+{pa_}*(26.7*{kg_}+903*{m_})+25,'
+       f'135.3-30.8*{a_}+{pa_}*(10*{kg_}+934*{m_})+IF({P["coef"]}="Same as current site",20,25)),'
+       f'IF({P["sex"]}="Male",662-9.53*{a_}+{pa_}*(15.91*{kg_}+539.6*{m_}),354-6.91*{a_}+{pa_}*(9.36*{kg_}+726*{m_})))')
+PL[W['maint'].replace('$', '')] = f'=ROUND({eer}/10,0)*10'
+PL[W['bmi'].replace('$', '')] = f'=ROUND({kg_}/({m_})^2,1)'
+for key in ('pa', 'maint', 'bmi'):
+    c = PL[W[key].replace('$', '')]; c.font = font(); c.border = BOX
+PL[W['pa'].replace('$', '')].number_format = '0.00'; PL[W['maint'].replace('$', '')].number_format = '#,##0'; PL[W['bmi'].replace('$', '')].number_format = '0.0'
+
+# ---------------------------------------------------------------- 2. TARGETS (calculated, with optional override)
+put(PL, 'B14', '2. DAILY TARGETS  (calculated with the site\'s equations — type in Override to change one)', bold=True, size=11)
+for c_, h in zip('BCDE', ['Target', 'Calculated', 'Override', 'Used by the model']): head(PL, f'{c_}15', h)
+def dri_f(mc, fc):
+    return (f'=IF({P["sex"]}="Male",INDEX(\'DRI Tables\'!${mc}$23:${mc}$27,MATCH({W["bracket"]},\'DRI Tables\'!$A$23:$A$27,0)),'
+            f'INDEX(\'DRI Tables\'!${fc}$23:${fc}$27,MATCH({W["bracket"]},\'DRI Tables\'!$A$23:$A$27,0)))')
+TG = [('kcal', 'Calories (kcal/day)', f'=MAX(IF({P["sex"]}="Male",\'DRI Tables\'!$E$17,\'DRI Tables\'!$E$18),ROUND(({W["maint"]}+{W["delta"]})/10,0)*10)'),
+      ('pfloor', 'Protein at least (g) — 1.6 g/kg, kept in 10–30% of kcal', 'PROT'),
+      ('fiber', 'Fiber at least (g) — 14 g per 1,000 kcal', 'FIB'),
+      ('calcium', 'Calcium at least (mg)', dri_f('E', 'F')), ('iron', 'Iron at least (mg)', dri_f('G', 'H')),
+      ('potassium', 'Potassium at least (mg)', dri_f('I', 'J')), ('vitc', 'Vitamin C at least (mg)', dri_f('C', 'D')),
+      ('sodium', 'Sodium under (mg)', 2300), ('sugar', 'Total sugars under (g, optional)', None)]
+for k, (key, lab, f) in enumerate(TG):
+    r = 16 + k
+    if f == 'PROT': f = f'=MIN(MAX(ROUND(1.6*{W["kg"]},0),ROUND(0.1*$C$16/4,0)),ROUND(0.3*$C$16/4,0))'
+    if f == 'FIB': f = '=ROUND(14*$C$16/1000,0)'
+    put(PL, f'B{r}', lab, box=True)
+    put(PL, f'C{r}', f, BLUE if isinstance(f, (int, float)) else BLACK, fmt='#,##0', box=True)
+    put(PL, f'D{r}', None, BLUE, fmt='#,##0', box=True, fl=fill('FFFDE7'))
+    put(PL, f'E{r}', f'=IF(AND(D{r}="",C{r}=""),"",IF(D{r}="",C{r},D{r}))', bold=True, fmt='#,##0', box=True)
+    P[key] = f'Planner!$E${r}'
+
+# ---------------------------------------------------------------- 3. DIET & PRICES, 4. BALANCE RULES
+put(PL, 'B35', '3. DIET & PRICES', bold=True, size=11)
+pin(36, 'diet', 'Diet', 'Balanced', fmt='@')
+PL['C36'].fill = YELLOW
+put(PL, 'B37', 'What it means', box=True)
+put(PL, 'C37', f"=INDEX(Diets!$B$5:$B${4+len(DIETS)},MATCH({P['diet']},Diets!$A$5:$A${4+len(DIETS)},0))", box=True, al=WRAP)
+put(PL, 'B38', 'Macro split (% of calories)', box=True)
+put(PL, 'C38', '="Protein "&TEXT(\'Matrix Model\'!$C$8,"0%")&"–"&TEXT(\'Matrix Model\'!$D$8,"0%")&", Carbs "&TEXT(\'Matrix Model\'!$C$9,"0%")&"–"&TEXT(\'Matrix Model\'!$D$9,"0%")&", Fat "&TEXT(\'Matrix Model\'!$C$10,"0%")&"–"&TEXT(\'Matrix Model\'!$D$10,"0%")', box=True)
+pin(39, 'psrc', 'Price source', 'Walmart (Oct 2026)', fmt='@', note='or "BLS U.S. average (Sep 2026)" — sensitivity check')
+dv = DataValidation(type='list', formula1=f"=Diets!$A$5:$A${4+len(DIETS)}", allow_blank=False); PL.add_data_validation(dv); dv.add('C36')
+dv2 = DataValidation(type='list', formula1='"Walmart (Oct 2026),BLS U.S. average (Sep 2026)"'); PL.add_data_validation(dv2); dv2.add('C39')
+
+put(PL, 'B41', '4. BALANCE RULES  (keep amounts realistic)', bold=True, size=11)
+pin(42, 'tol', 'Calorie tolerance (±)', S['calorie_tolerance'], fmt='0%')
+pin(43, 'alpha', 'Max share of the day\'s protein from ONE food', S['max_protein_share'], fmt='0%', note='applies to foods with ≥ 10 g protein / 100 g')
+pin(44, 'beta', 'Min share of protein at breakfast, lunch AND dinner', S['min_meal_protein_share'], fmt='0%')
+row = 45
 for meal in MEALS:
     lo, hi = S['meal_kcal'][meal]
     put(PL, f'B{row}', f'{meal}: share of calories (min / max)', box=True)
     put(PL, f'C{row}', lo, BLUE, fmt='0%', box=True); put(PL, f'D{row}', hi, BLUE, fmt='0%', box=True)
     P[f'mlo_{meal}'] = f'Planner!$C${row}'; P[f'mhi_{meal}'] = f'Planner!$D${row}'
     row += 1
-pin(30, 'veg', 'Vegetables minimum (cup-equivalents)', S['min_veg_cups'], fmt='0.0')
-pin(31, 'fruit', 'Fruit minimum (cup-equivalents)', S['min_fruit_cups'], fmt='0.0')
-row = 32
+pin(row, 'veg', 'Vegetables minimum (cup-equivalents)', S['min_veg_cups'], fmt='0.0'); row += 1
+pin(row, 'fruit', 'Fruit minimum (cup-equivalents)', S['min_fruit_cups'], fmt='0.0'); row += 1
 for g in CAPS:
     pin(row, f"cap_{g['key']}", f"Max {g['label'].lower()} ({g['unit']}/day)", g['max'], fmt='0', note=g['note'] or None)
     row += 1
@@ -440,11 +527,12 @@ QR = NR + len(NUTS) + 2
 put(DC, f'A{QR}', 'Targets the plan misses (example person, each diet\'s own macro split)', bold=True, size=11)
 dnames = [d['name'] for d in DIETS] + ['Balanced']
 checks = [('Calories in ±5%', lambda c: f'OR({c}{NR+1}<{EX["calories"]}*0.95-0.5,{c}{NR+1}>{EX["calories"]}*1.05+0.5)'),
-          ('Fiber ≥ 38 g', lambda c: f'{c}{NR+5}<{EX["fiber"]}-0.01'),
-          ('Calcium ≥ 1,000 mg', lambda c: f'{c}{NR+7}<{EX["calcium"]}-0.01'),
-          ('Potassium ≥ 3,400 mg', lambda c: f'{c}{NR+9}<{EX["potassium"]}-0.01'),
-          ('Vitamin C ≥ 90 mg', lambda c: f'{c}{NR+11}<{EX["vitc"]}-0.01'),
-          ('Sodium ≤ 2,300 mg', lambda c: f'{c}{NR+10}>{EX["sodium"]}+0.01'),
+          (f'Protein ≥ {EX["proteinMin"]} g', lambda c: f'{c}{NR+2}<{EX["proteinMin"]}-0.01'),
+          (f'Fiber ≥ {EX["fiber"]} g', lambda c: f'{c}{NR+5}<{EX["fiber"]}-0.01'),
+          (f'Calcium ≥ {EX["calcium"]:,} mg', lambda c: f'{c}{NR+7}<{EX["calcium"]}-0.01'),
+          (f'Potassium ≥ {EX["potassium"]:,} mg', lambda c: f'{c}{NR+9}<{EX["potassium"]}-0.01'),
+          (f'Vitamin C ≥ {EX["vitc"]} mg', lambda c: f'{c}{NR+11}<{EX["vitc"]}-0.01'),
+          (f'Sodium ≤ {EX["sodium"]:,} mg', lambda c: f'{c}{NR+10}>{EX["sodium"]}+0.01'),
           ('Fat ≤ 35% of calories (AMDR; Low-Carb allows 50%)', lambda c: f'{c}{NR+4}*9>{c}{NR+1}*0.35+0.01')]
 for i, (lab, fn) in enumerate(checks):
     r = QR + 1 + i
@@ -455,11 +543,14 @@ for i, (lab, fn) in enumerate(checks):
 DC.conditional_formatting.add(f'C{QR+1}:{LC}{QR+len(checks)}', FormulaRule(formula=[f'C{QR+1}="MISSED"'], fill=BADF, font=Font(color='C00000', bold=True)))
 IR = QR + len(checks) + 2
 put(DC, f'A{IR}', 'What this shows', bold=True, size=11)
+same = [d['name'] for d in DIETS if SOL[d['name']]['cost'] is not None and abs(SOL[d['name']]['cost'] - SOL['Balanced']['cost']) < 0.005]
 insights = [
-    f"• The optimized Balanced day costs about ${SOL['Balanced']['cost']:.2f} and meets every target; the typical day costs more and misses fiber, potassium, sodium and fat limits.",
-    '• Balanced, Vegetarian, Pescatarian and No Pork give the SAME plan: at these prices the cheapest balanced day already has no meat. '
-    'Plant proteins (beans, peanut butter) cost far less per gram of protein than meat.',
-    '• High-Protein and Low-Carb cost more because they force more protein per calorie, which pulls in eggs and chicken.',
+    f"• Example person (from the calculator): {EXP['sex']}, {EXP['age']}, {EXP['heightCm']} cm, {EXP['weightKg']} kg, {EXP['activity']}, {EXP['goal']} -> "
+    f"{EX['calories']:,} kcal, protein ≥ {EX['proteinMin']} g, fiber ≥ {EX['fiber']} g.",
+    f"• The optimized Balanced day costs ${SOL['Balanced']['cost']:.2f} and meets every target; the typical day costs more and misses several targets (red cells).",
+    f"• {', '.join(same)} give the same cost: at these prices the cheapest balanced day already avoids meat, so excluding it costs nothing. "
+    'Plant proteins (beans, peanut butter) and eggs cost far less per gram of protein than meat.',
+    '• High-Protein and Low-Carb cost more because they force more protein (or fat) per calorie, which pulls in pricier foods.',
     '• Each column of X is a separate Simplex solve; A·X then evaluates every diet against every nutrient in one matrix multiplication.']
 for i, t in enumerate(insights): put(DC, f'A{IR+1+i}', t)
 DC.column_dimensions['A'].width = 5; DC.column_dimensions['B'].width = 34
@@ -468,23 +559,34 @@ DC.freeze_panes = 'C6'
 # ================================================================ OPTIMALITY PROOF (Balanced example)
 R = SOL['Balanced']; Mx = np.array(R['rows'], float); bx = np.array(R['rhs'], float); xx = np.array(R['x']); cx = np.array(R['c'])
 kinds, labels, senses = R['kinds'], R['labels'], R['senses']
-from scipy.optimize import linprog
-sg_ = np.array([1 if s == '<=' else -1 for s in senses])
-hres = linprog(cx, A_ub=Mx * sg_[:, None], b_ub=bx * sg_, bounds=[(0, None)] * len(cx), method='highs')
-duals = hres.ineqlin.marginals * sg_
-cap_dual = {R['foods'][i]: duals[k] for i, k in enumerate([k for k, kd in enumerate(kinds) if kd == 'cap'])}
-T = [k for k, kd in enumerate(kinds) if kd != 'cap' and abs(duals[k]) > 1e-10]
-xfull = {fid: v for fid, v in zip(R['foods'], R['x'])}
-ucap = {fid: bx[k] for fid, k in zip(R['foods'], [k for k, kd in enumerate(kinds) if kd == 'cap'])}
-NB = [fid for fid in R['foods'] if xfull[fid] > 1e-9 and abs(cap_dual[fid]) > 1e-10]          # at cap, cap binding
-BB = [fid for fid in R['foods'] if xfull[fid] > 1e-9 and fid not in NB]                       # basic foods
+# Exact optimal basis from HiGHS (caps as variable bounds): tight rows = nonbasic rows, basic foods = basic columns.
+import highspy
+CAPK = [k for k, kd in enumerate(kinds) if kd == 'cap']; GK = [k for k, kd in enumerate(kinds) if kd != 'cap']
+uvec = np.array([bx[k] for k in CAPK]); nX = len(cx)
+hs = highspy.Highs(); hs.setOptionValue('output_flag', False); hs.setOptionValue('solver', 'simplex')
+lp = highspy.HighsLp(); lp.num_col_ = nX; lp.num_row_ = len(GK)
+lp.col_cost_ = cx; lp.col_lower_ = np.zeros(nX); lp.col_upper_ = uvec
+INF = highspy.kHighsInf
+lp.row_lower_ = np.array([bx[k] if senses[k] == '>=' else -INF for k in GK]); lp.row_upper_ = np.array([bx[k] if senses[k] == '<=' else INF for k in GK])
+lp.a_matrix_.format_ = highspy.MatrixFormat.kRowwise
+starts, idx, vals = [0], [], []
+for k in GK:
+    nz = np.nonzero(Mx[k])[0]; idx += nz.tolist(); vals += Mx[k][nz].tolist(); starts.append(len(idx))
+lp.a_matrix_.start_, lp.a_matrix_.index_, lp.a_matrix_.value_ = starts, idx, vals
+hs.passModel(lp); hs.run()
+basis = hs.getBasis(); xh = np.array(hs.getSolution().col_value)
+assert np.max(np.abs(xh - xx)) < 1e-6, ('HiGHS found a different optimal x than the JS Simplex', np.max(np.abs(xh - xx)))
+BS = highspy.HighsBasisStatus
+T = [GK[i] for i, st in enumerate(basis.row_status) if st != BS.kBasic]
+BB = [R['foods'][j] for j, st in enumerate(basis.col_status) if st == BS.kBasic]
+NB = [R['foods'][j] for j, st in enumerate(basis.col_status) if st == BS.kUpper]
 assert len(BB) == len(T), (BB, [labels[k] for k in T])
 title(PR, 'Optimality Proof — why the Balanced plan is the cheapest possible (example person)',
       'At a Simplex corner, the tight rules form a SQUARE linear system B·x_B = r. Solving it with B⁻¹ reproduces the answer; '
       'the same B⁻¹ gives shadow prices that certify no cheaper plan exists.')
 put(PR, 'A3', f"Tight rules: {len(T)}.  Foods strictly inside their bounds (basic): {len(BB)}.  Foods held at their cap: {len(NB)}.  "
-    "Bananas sit exactly at their cap AND make the fruit rule tight (a degenerate corner), so bananas are treated as basic — "
-    "the standard way to handle degeneracy.", italic=True)
+    "The rows and columns come from the exact basis the Simplex method finishes on. At a degenerate corner a basic food can sit exactly "
+    "at its cap (it is still basic) — that is how the square system stays square.", italic=True)
 put(PR, 'A4', 'Built for the example person and the Balanced diet with default rules; it reads prices and nutrients live from Food Data. '
     'If you edit prices so the plan is no longer optimal, the certificate below will say so.', italic=True)
 # G_T block (tight rows x all foods), with b_T and sense
@@ -508,6 +610,14 @@ def proof_row(label):
             return (lambda key: lambda j: f"={fd('n_'+key, j)}")(key), EX[key]
     if label.startswith('kcal <='): return (lambda j: f"={fd('n_kcal', j)}"), ex_kcal * (1 + S['calorie_tolerance'])
     if label.startswith('sodium <='): return (lambda j: f"={fd('n_sodium', j)}"), EX['sodium']
+    if label.startswith('protein >='): return (lambda j: f"={fd('n_protein', j)}"), EX['proteinMin']
+    if ' of protein' in label:
+        j0 = IDS.index(label.split(' ')[0]); a_ = S['max_protein_share']
+        return (lambda j: f"={fd('n_protein', j)}*({1 if j == j0 else 0}-{a_})"), 0
+    for g in CAPS:
+        if label.startswith(g['key'] + ' <='):
+            per = (lambda j: '100') if g['unit'] == 'grams' else (lambda j: f"100/{fd('sg', j)}")
+            return (lambda g, per: lambda j: f"=IF({fd('capg', j)}=\"{g['label']}\",{per(j)},0)")(g, per), g['max']
     for meal in MEALS:
         if label.startswith(f'{meal} kcal'):
             lo, hi = S['meal_kcal'][meal]
@@ -578,7 +688,7 @@ for q, fid in enumerate(BB): put(PR, f'{L(8+q)}{SP_}', f'={col_of[fid]}{RC_}', f
 arr(PR, f'H{SP_+1}:{L(7+k_)}{SP_+1}', f'=MMULT(H{SP_}:{L(7+k_)}{SP_},{Bc0}{IV}:{Bc1}{IV+k_-1})', fmt='0.000000', fl=GREY)
 put(PR, f'G{SP_+1}', 'yᵀ (row)', bold=True)
 units = {'kcal': ('per +100 kcal', 100), 'fiber': ('per +1 g fiber', 1), 'calcium': ('per +100 mg calcium', 100),
-         'vegetables': ('per +1 cup of vegetables', 1), 'fruit': ('per +1 cup of fruit', 1)}
+         'vegetables': ('per +1 cup of vegetables', 1), 'fruit': ('per +1 cup of fruit', 1), 'protein': ('per +1 g of protein', 1)}
 for i in range(k_):
     r = SP_ + 1 + i; lab = labels[T[i]]
     put(PR, f'A{r}', f'=A{PG0+i}', box=True); put(PR, f'B{r}', f'=B{PG0+i}', box=True, al=CENTER)
@@ -586,6 +696,9 @@ for i in range(k_):
     put(PR, f'D{r}', f'=IF(B{r}="≥",IF(C{r}>=-1E-9,"✓","✗"),IF(C{r}<=1E-9,"✓","✗"))', box=True, al=CENTER)
     key = lab.split(' ')[0]
     if key in units: put(PR, f'E{r}', f'=TEXT(C{r}*{units[key][1]},"$0.000")&" {units[key][0]}"', box=True)
+    elif key in [g['key'] for g in CAPS]:
+        unit_ = next(g['unit'] for g in CAPS if g['key'] == key)
+        put(PR, f'E{r}', f'=TEXT(ABS(C{r}),"$0.000")&" saved per extra {unit_[:-1]} the {key.replace("_", " ")} cap allows"', box=True)
     elif key.endswith('%'):
         put(PR, f'E{r}', f'=TEXT(ABS(C{r})*100,"$0.000")&" per 100 kcal the {key[:-1]} limit is loosened"', box=True)
     elif 'kcal' in lab:

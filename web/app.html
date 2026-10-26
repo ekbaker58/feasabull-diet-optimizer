@@ -1,0 +1,308 @@
+<title>FeasaBULL Meal Planner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;700;800;900&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: two columns — the person on the left, their numbers and plan on the right; one column on phones.
+   The targets panel borrows the FDA Nutrition Facts label (Franklin Gothic, heavy rules). */
+:root {
+  --bg: #f3f6f4; --panel: #ffffff; --ink: #14211b; --muted: #55635c; --rule: #14211b; --line: #d5ddd8;
+  --accent: #2f6f4f; --accent-soft: #e2efe7; --grain: #b7791f; --meat: #a34a36; --fat: #5b5fa8;
+  --ok: #2e7d4f; --ok-soft: #e3f2e8; --warn: #9a5b00; --bad: #b3261e; --bad-soft: #fbe7e5; --focus: #1d5fd1;
+  --display: "Libre Franklin", "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1613; --panel: #18211d; --ink: #e6eee9; --muted: #9db0a6; --rule: #e6eee9; --line: #2c3a33;
+  --accent: #6fc39a; --accent-soft: #1f3329; --grain: #e0a84a; --meat: #e08a74; --fat: #9ea3ea;
+  --ok: #6fc39a; --ok-soft: #1c3226; --warn: #e5a54a; --bad: #f08a80; --bad-soft: #3a1f1d; --focus: #8ab4ff; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1613; --panel: #18211d; --ink: #e6eee9; --muted: #9db0a6; --rule: #e6eee9; --line: #2c3a33;
+  --accent: #6fc39a; --accent-soft: #1f3329; --grain: #e0a84a; --meat: #e08a74; --fat: #9ea3ea;
+  --ok: #6fc39a; --ok-soft: #1c3226; --warn: #e5a54a; --bad: #f08a80; --bad-soft: #3a1f1d; --focus: #8ab4ff; color-scheme: dark }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-weight: 900; font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.01em; line-height: 1.05; }
+.lede { color: var(--muted); max-width: 64ch; margin: 8px 0 0; }
+.small { font-size: 13px; color: var(--muted); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.steps { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 18px 0 22px; padding: 0; list-style: none; font-family: var(--display); font-weight: 700; font-size: 14px; }
+.steps li { display: flex; align-items: center; gap: 8px; }
+.steps b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--bg); font-size: 13px; }
+.steps .arrow { color: var(--muted); font-weight: 500; }
+.grid { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+form.panel { display: grid; gap: 16px; position: sticky; top: max(12px, env(safe-area-inset-top, 0px)); }
+@media (max-width: 860px) { form.panel { position: static; } }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 0; }
+legend, .label { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; padding: 0; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { flex: 1 1 auto; text-align: center; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; cursor: pointer; font-weight: 700; font-size: 14px; background: var(--panel); }
+.seg input:checked + label { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.seg input:focus-visible + label { outline: 2px solid var(--focus); outline-offset: 2px; }
+.acts label { flex-basis: 100%; text-align: left; font-weight: 400; }
+.acts label strong { display: block; font-weight: 700; }
+.acts label span { font-size: 12.5px; color: var(--muted); }
+.acts input:checked + label span { color: inherit; opacity: 0.8; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row > * { flex: 1 1 0; min-width: 0; }
+input[type=number], select { width: 100%; font: 16px var(--body); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+input[type=number]:focus-visible, select:focus-visible, summary:focus-visible, button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.unit { font-size: 13px; color: var(--muted); flex: 0 0 auto; }
+.err { color: var(--bad); font-size: 13px; }
+details.excl summary { cursor: pointer; font-weight: 700; font-size: 14px; }
+.excl .groups { display: grid; gap: 10px; margin-top: 10px; max-height: 320px; overflow: auto; padding-right: 4px; }
+.excl .g { display: grid; gap: 2px; }
+.excl .g > span { font-weight: 700; font-size: 13px; }
+.excl label { font-size: 13.5px; display: flex; gap: 6px; align-items: center; }
+.results { display: grid; gap: 22px; min-width: 0; }
+/* Nutrition Facts style targets */
+.facts { background: var(--panel); border: 2px solid var(--rule); padding: 10px 14px 12px; font-family: var(--display); max-width: 100%; }
+.facts h2 { font-weight: 900; font-size: 30px; line-height: 1; letter-spacing: -0.01em; }
+.facts .who { font-family: var(--body); font-size: 13px; color: var(--muted); padding: 4px 0 6px; border-bottom: 10px solid var(--rule); }
+.facts .cal { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 5px solid var(--rule); padding: 4px 0; }
+.facts .cal span:first-child { font-weight: 900; font-size: 22px; }
+.facts .cal span:last-child { font-weight: 900; font-size: 34px; font-variant-numeric: tabular-nums; }
+.facts .line { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--rule); padding: 3px 0; font-size: 14.5px; }
+.facts .line b { font-weight: 800; }
+.facts .line span:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.facts .foot { font-family: var(--body); font-size: 12px; color: var(--muted); padding-top: 6px; border-top: 5px solid var(--rule); margin-top: -1px; }
+.top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 620px) { .top { grid-template-columns: minmax(0, 1fr); } }
+.cost { display: grid; gap: 10px; }
+.big { font-family: var(--display); font-weight: 900; font-size: clamp(40px, 6vw, 58px); line-height: 1; font-variant-numeric: tabular-nums; }
+.big small { font-size: 16px; font-weight: 700; color: var(--muted); }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 10px; font-weight: 700; font-size: 13px; width: fit-content; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.macro { display: grid; gap: 6px; }
+.bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--line); }
+.bar i { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; background: var(--c); vertical-align: -1px; }
+.meals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 620px) { .meals { grid-template-columns: minmax(0, 1fr); } }
+.meal { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 8px; align-content: start; }
+.meal header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
+.meal h3 { font-weight: 800; font-size: 18px; }
+.meal header span { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.item:last-child { border-bottom: 0; }
+.extra { font-size: 13px; color: var(--muted); }
+.item .n { font-weight: 700; }
+.item .q { grid-column: 1; font-size: 13px; color: var(--muted); }
+.item .k { grid-row: 1 / span 2; grid-column: 2; text-align: right; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+th { font-family: var(--display); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.yes { color: var(--ok); font-weight: 700; }
+.no { color: var(--bad); font-weight: 700; }
+.math { display: grid; gap: 10px; }
+.math pre { margin: 0; padding: 12px; background: var(--accent-soft); border-radius: 8px; overflow-x: auto; font: 13px/1.6 var(--mono); }
+.notes { display: grid; gap: 6px; font-size: 13.5px; color: var(--muted); }
+.notes p { margin: 0; max-width: 80ch; }
+h2.sec { font-weight: 800; font-size: 20px; }
+.secrow { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.reasons { margin: 0; padding-left: 18px; }
+@media (prefers-reduced-motion: no-preference) { .fade { animation: fade 0.25s ease-out; } @keyframes fade { from { opacity: 0.4; } to { opacity: 1; } } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>FeasaBULL Meal Planner</h1>
+    <p class="lede">Enter your numbers once. The planner works out your daily targets with the same equations as FeasaBULL Calories, then uses linear programming to find the cheapest day of food that meets every target.</p>
+    <ol class="steps" aria-label="How it works">
+      <li><b>1</b> You</li><li class="arrow" aria-hidden="true">→</li>
+      <li><b>2</b> Daily targets (EER + DRI)</li><li class="arrow" aria-hidden="true">→</li>
+      <li><b>3</b> Cheapest plan (Simplex)</li>
+    </ol>
+  </header>
+
+  <div class="grid">
+    <form class="panel" id="form" novalidate>
+      <fieldset><legend>Units</legend>
+        <div class="seg"><input type="radio" name="units" id="u-std" value="standard" checked><label for="u-std">Standard</label><input type="radio" name="units" id="u-met" value="metric"><label for="u-met">Metric</label></div>
+      </fieldset>
+      <fieldset><legend>Sex</legend>
+        <div class="seg"><input type="radio" name="sex" id="s-f" value="female"><label for="s-f">Female</label><input type="radio" name="sex" id="s-m" value="male" checked><label for="s-m">Male</label></div>
+      </fieldset>
+      <fieldset><legend>Age</legend>
+        <div class="row"><input type="number" id="age" name="age" min="14" max="99" value="21" inputmode="numeric"><span class="unit">years</span></div>
+      </fieldset>
+      <fieldset id="std-fields"><legend>Height and weight</legend>
+        <div class="row"><input type="number" id="ft" name="ft" value="5" min="3" max="7" aria-label="Height, feet"><span class="unit">ft</span><input type="number" id="inch" name="inch" value="8" min="0" max="11" aria-label="Height, inches"><span class="unit">in</span></div>
+        <div class="row"><input type="number" id="lb" name="lb" value="155" min="77" max="600" aria-label="Weight in pounds"><span class="unit">lb</span></div>
+      </fieldset>
+      <fieldset id="met-fields" hidden><legend>Height and weight</legend>
+        <div class="row"><input type="number" id="cm" name="cm" value="173" min="120" max="230" aria-label="Height in centimeters"><span class="unit">cm</span><input type="number" id="kg" name="kg" value="70.3" step="0.1" min="35" max="275" aria-label="Weight in kilograms"><span class="unit">kg</span></div>
+      </fieldset>
+      <fieldset><legend>Activity level</legend><div class="seg acts" id="acts"></div></fieldset>
+      <fieldset><legend>Goal</legend><div class="seg" id="goals"></div></fieldset>
+      <fieldset><legend>Diet</legend>
+        <select id="diet" name="diet"></select>
+        <span class="small" id="diet-desc"></span>
+      </fieldset>
+      <fieldset><legend>Prices</legend>
+        <select id="psrc" name="psrc"><option value="walmart">Walmart, October 2026</option><option value="bls">BLS U.S. average, September 2026</option></select>
+      </fieldset>
+      <details class="excl"><summary>Foods I won't eat <span class="small" id="excl-count"></span></summary><div class="groups" id="excl"></div></details>
+      <details class="excl"><summary>Calculator settings</summary>
+        <div style="display:grid;gap:6px;margin-top:8px">
+          <label class="small" for="coef">Activity coefficients</label>
+          <select id="coef" name="coef"><option value="iom">IOM 2005, by sex (corrected)</option><option value="site">Same as the current FeasaBULL site</option></select>
+          <span class="small">The live site applies the men's activity coefficients to women and girls. The corrected values change women's targets by about −80 to +340 kcal.</span>
+        </div>
+      </details>
+      <div class="err" id="form-err" role="alert"></div>
+    </form>
+
+    <section class="results" id="results" aria-live="polite">
+      <div class="top">
+        <div class="facts" id="facts"></div>
+        <div class="panel cost" id="cost"></div>
+      </div>
+      <div><div class="secrow"><h2 class="sec">Your day</h2><span class="small">Lunch and dinner share one batch-cooked base: cook once, eat twice.</span></div></div>
+      <div class="meals" id="meals"></div>
+      <div class="panel"><h2 class="sec">Plan vs. targets</h2><div class="tablewrap"><table id="check"></table></div></div>
+      <details class="panel math" id="math"><summary><b>Show the math</b></summary><div id="math-body" class="math"></div></details>
+      <div class="notes">
+        <p>Targets: IOM Estimated Energy Requirement and Dietary Reference Intakes, the same method as FeasaBULL Calories. Nutrients: USDA SR28. Prices: Walmart, Oct 2026 (regular prices), or BLS U.S. city averages.</p>
+        <p>The plan is the cheapest combination of 71 foods that meets every target. Limits keep it realistic: no single food supplies more than 35% of the protein, every main meal carries at least 20% of the protein, and meat, beans, cheese, grains, oils and snacks are capped as groups.</p>
+        <p>Educational estimates for healthy people 14 and older, not medical advice. Unofficial student project, EGN4450 Team 9.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script type="module">
+/*__MODULES__*/
+
+const $ = (id) => document.getElementById(id);
+const fmt = (n, d = 0) => Number(n).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const NICE = { kcal: "Calories", protein: "Protein", carb: "Carbohydrate", fat: "Fat", fiber: "Fiber", sugar: "Total sugars",
+  calcium: "Calcium", iron: "Iron", potassium: "Potassium", sodium: "Sodium", vitc: "Vitamin C" };
+
+// ---- build the form controls from the data
+$("acts").innerHTML = ACTIVITY.map((a) => `<input type="radio" name="activity" id="a-${a.id}" value="${a.id}" ${a.id === "active" ? "checked" : ""}><label for="a-${a.id}"><strong>${a.label}</strong><span>${a.blurb}</span></label>`).join("");
+$("goals").innerHTML = GOALS.map((g) => `<input type="radio" name="goal" id="g-${g.id}" value="${g.id}" ${g.id === "maintain" ? "checked" : ""}><label for="g-${g.id}">${g.label}</label>`).join("");
+$("diet").innerHTML = DIETS.map((d) => `<option value="${esc(d.name)}">${esc(d.name)}</option>`).join("");
+const groups = [...new Set(FOODS.map((f) => f.group))];
+$("excl").innerHTML = groups.map((g) => `<div class="g"><span>${esc(g)}</span>${FOODS.filter((f) => f.group === g).map((f) =>
+  `<label for="x-${f.id}"><input type="checkbox" id="x-${f.id}" value="${f.id}" name="exclude">${esc(f.name)}</label>`).join("")}</div>`).join("");
+
+function readForm() {
+  const v = (n) => document.querySelector(`input[name="${n}"]:checked`)?.value;
+  const units = v("units");
+  $("std-fields").hidden = units !== "standard"; $("met-fields").hidden = units !== "metric";
+  return {
+    form: { units, sex: v("sex"), age: $("age").value, ft: $("ft").value, inch: $("inch").value, lb: $("lb").value, cm: $("cm").value, kg: $("kg").value,
+            activity: v("activity"), goal: v("goal") },
+    prefs: { diet: $("diet").value, priceSource: $("psrc").value,
+             exclude: [...document.querySelectorAll('input[name="exclude"]:checked')].map((c) => c.value) },
+    coef: $("coef").value,
+  };
+}
+
+function servingText(item) {
+  const s = item.servings;
+  const q = s >= 0.95 && s <= 1.05 ? item.serving : `${fmt(s, s < 10 ? 1 : 0)} × ${item.serving}`;
+  return `${q} · ${fmt(item.grams)} g`;
+}
+
+function render() {
+  const { form, prefs, coef } = readForm();
+  const d = DIETS.find((x) => x.name === prefs.diet);
+  $("diet-desc").textContent = d ? d.desc : "";
+  $("excl-count").textContent = prefs.exclude.length ? `(${prefs.exclude.length})` : "";
+  const { errors, person } = personFromForm(form);
+  const errs = Object.values(errors);
+  $("form-err").textContent = errs.join(" ");
+  if (errs.length) return;
+
+  const T = calculateTargets(person, { coefficients: coef });
+  const t = T.optimizerTargets;
+  const r = optimizeDiet(t, prefs);
+  const actLabel = ACTIVITY.find((a) => a.id === person.activity).label;
+  const heightTxt = form.units === "metric" ? `${person.heightCm} cm` : `${form.ft}′${form.inch || 0}″`;
+  const weightTxt = form.units === "metric" ? `${person.weightKg} kg` : `${form.lb} lb`;
+
+  $("facts").innerHTML = `
+    <h2>Daily Targets</h2>
+    <div class="who">${person.sex === "male" ? "Male" : "Female"}, ${person.age} · ${heightTxt} · ${weightTxt} · ${actLabel} · ${T.goal}</div>
+    <div class="cal"><span>Calories</span><span>${fmt(T.calories)}</span></div>
+    <div class="line"><span><b>Protein</b> at least</span><span>${fmt(t.proteinMin)} g</span></div>
+    <div class="line"><span><b>Fiber</b> at least</span><span>${fmt(t.fiber)} g</span></div>
+    <div class="line"><span><b>Calcium</b> at least</span><span>${fmt(t.calcium)} mg</span></div>
+    <div class="line"><span><b>Iron</b> at least</span><span>${fmt(t.iron)} mg</span></div>
+    <div class="line"><span><b>Potassium</b> at least</span><span>${fmt(t.potassium)} mg</span></div>
+    <div class="line"><span><b>Vitamin C</b> at least</span><span>${fmt(t.vitc)} mg</span></div>
+    <div class="line"><span><b>Sodium</b> under</span><span>${fmt(t.sodium)} mg</span></div>
+    <div class="foot">Maintenance ${fmt(T.maintenance)} kcal${T.calories !== T.maintenance ? `, ${T.calories > T.maintenance ? "+" : "−"}${fmt(Math.abs(T.calories - T.maintenance))} for your goal` : ""}. Protein is 1.6 g per kg, kept within 10–30% of calories. BMI ${T.bmi.value} (${T.bmi.category}).</div>`;
+
+  if (r.status !== "optimal") {
+    $("cost").innerHTML = `<span class="label">${esc(prefs.diet)}</span><div class="pill bad">No plan meets every rule</div><ul class="reasons">${(r.reasons || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    $("meals").innerHTML = ""; $("check").innerHTML = ""; $("math-body").innerHTML = "";
+    return;
+  }
+  const tot = r.totals, kc = tot.kcal;
+  const pP = (4 * tot.protein) / kc * 100, pC = (4 * tot.carb) / kc * 100, pF = (9 * tot.fat) / kc * 100;
+  $("cost").innerHTML = `
+    <span class="label">Cheapest ${esc(r.diet)} plan</span>
+    <div class="big">$${fmt(r.costPerDay, 2)}<small> / day</small></div>
+    <div class="small">$${fmt(r.costPerWeek, 2)} a week · ${prefs.priceSource === "bls" ? "BLS U.S. average prices" : "Walmart prices"}</div>
+    <div class="pill ok">✓ Meets every target</div>
+    <div class="macro"><span class="label">Where the calories come from</span>
+      <div class="bar" role="img" aria-label="Protein ${fmt(pP)}%, carbohydrate ${fmt(pC)}%, fat ${fmt(pF)}%"><i style="width:${pP}%;background:var(--meat)"></i><i style="width:${pC}%;background:var(--grain)"></i><i style="width:${pF}%;background:var(--fat)"></i></div>
+      <div class="legend"><span style="--c:var(--meat)">Protein ${fmt(pP)}%</span><span style="--c:var(--grain)">Carbs ${fmt(pC)}%</span><span style="--c:var(--fat)">Fat ${fmt(pF)}%</span></div></div>`;
+
+  $("meals").innerHTML = r.meals.map((m) => `
+    <article class="meal fade"><header><h3>${m.meal}</h3><span>${fmt(m.kcal)} kcal · ${fmt(m.protein)} g protein</span></header>
+      ${m.items.filter((i) => i.grams >= 10).map((i) => `<div class="item"><span class="n">${esc(i.name)}</span><span class="k">${fmt(i.kcal)} kcal<br>${fmt(i.protein)} g P</span><span class="q">${esc(servingText(i))}</span></div>`).join("") || `<span class="small">Nothing at this meal.</span>`}
+      ${m.items.some((i) => i.grams < 10) ? `<div class="extra">Plus a little: ${m.items.filter((i) => i.grams < 10).map((i) => `${esc(i.name.toLowerCase())} (${fmt(i.grams)} g)`).join(", ")}</div>` : ""}
+    </article>`).join("");
+
+  const rows = [
+    ["kcal", "kcal", `${fmt(Math.round(kc))}`, `${fmt(Math.floor(t.calories * 0.95))}–${fmt(Math.ceil(t.calories * 1.05))}`, Math.abs(kc - t.calories) <= t.calories * 0.05 + 0.5],
+    ["protein", "g", fmt(tot.protein), `≥ ${fmt(t.proteinMin)}`, tot.protein >= t.proteinMin - 0.5],
+    ["fiber", "g", fmt(tot.fiber), `≥ ${fmt(t.fiber)}`, tot.fiber >= t.fiber - 0.5],
+    ["calcium", "mg", fmt(tot.calcium), `≥ ${fmt(t.calcium)}`, tot.calcium >= t.calcium - 0.5],
+    ["iron", "mg", fmt(tot.iron, 1), `≥ ${fmt(t.iron)}`, tot.iron >= t.iron - 0.05],
+    ["potassium", "mg", fmt(tot.potassium), `≥ ${fmt(t.potassium)}`, tot.potassium >= t.potassium - 0.5],
+    ["vitc", "mg", fmt(tot.vitc), `≥ ${fmt(t.vitc)}`, tot.vitc >= t.vitc - 0.5],
+    ["sodium", "mg", fmt(tot.sodium), `≤ ${fmt(t.sodium)}`, tot.sodium <= t.sodium + 0.5],
+  ];
+  $("check").innerHTML = `<thead><tr><th>Nutrient</th><th class="num">Plan</th><th class="num">Target</th><th class="num">Met</th></tr></thead><tbody>${rows.map(([k, u, v, tg, ok]) =>
+    `<tr><td>${NICE[k]} (${u})</td><td class="num">${v}</td><td class="num">${tg}</td><td class="num ${ok ? "yes" : "no"}">${ok ? "✓" : "✗"}</td></tr>`).join("")}</tbody>`;
+
+  const n = r.model.foods.length, chosen = r.plan.length;
+  const xs = r.model.foods.map((id, j) => [id, r.model.x[j], r.model.c[j]]).filter((e) => e[1] > 1e-6);
+  $("math-body").innerHTML = `
+    <p class="small">Same model as the spreadsheet's Matrix Model sheet, solved here in your browser.</p>
+<pre>minimize    cᵀx                      cost per day, c = $ per 100 g edible
+subject to  b_min ≤ A·x ≤ b_max      A is ${NUTRIENTS.length} nutrients × ${n} foods allowed by the ${esc(r.diet)} diet
+            meal, protein-share and food-group rows (${r.model.constraints} rows in total)
+            0 ≤ x ≤ u                x = food amounts in 100 g units
+
+b from step 2: kcal ${fmt(Math.floor(t.calories * 0.95))}–${fmt(Math.ceil(t.calories * 1.05))}, protein ≥ ${t.proteinMin} g, fiber ≥ ${t.fiber} g,
+               calcium ≥ ${t.calcium} mg, iron ≥ ${t.iron} mg, potassium ≥ ${t.potassium} mg, vitamin C ≥ ${t.vitc} mg, sodium ≤ ${t.sodium} mg
+
+Simplex: ${r.pivots} pivots (Gauss-Jordan row operations). ${chosen} of ${n} foods are non-zero.</pre>
+    <div class="tablewrap"><table><thead><tr><th>Food</th><th class="num">x (100 g)</th><th class="num">c ($/100 g)</th><th class="num">c·x</th></tr></thead><tbody>${xs.map(([id, x, c]) =>
+      `<tr><td>${esc(FOODS.find((f) => f.id === id).name)}</td><td class="num mono">${x.toFixed(3)}</td><td class="num mono">${c.toFixed(3)}</td><td class="num mono">$${(c * x).toFixed(2)}</td></tr>`).join("")}
+      <tr><td><b>cᵀx</b></td><td></td><td></td><td class="num mono"><b>$${r.costPerDay.toFixed(2)}</b></td></tr></tbody></table></div>`;
+}
+
+let timer;
+$("form").addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(render, 120); });
+$("form").addEventListener("submit", (e) => e.preventDefault());
+render();
+</script>
