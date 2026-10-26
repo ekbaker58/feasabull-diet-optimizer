@@ -1,8 +1,9 @@
 # FeasaBULL Diet Optimizer — EGN4450 Team 9 (Sinister Seven)
 
-Finds the **cheapest balanced day of food** that meets one person's nutrient targets, for the diet they choose,
-using **linear programming solved with the Simplex method**. It plugs into the team's FeasaBULL Calories site
-(https://feasabull-fuel-stats.base44.app), which supplies the person's targets.
+**Person in, cheapest balanced day of food out.** Enter sex, age, height, weight, activity and goal. The
+same equations as the team's FeasaBULL Calories site (https://feasabull-fuel-stats.base44.app) turn them into
+daily targets, and **linear programming solved with the Simplex method** finds the cheapest meal plan
+that meets them, for the diet the person chooses. How the steps connect: [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md).
 
 ```
 minimize    cᵀx                      cost per day
@@ -19,22 +20,26 @@ subject to  b_min ≤ A·x ≤ b_max      nutrient targets (calories, fiber, cal
 ## What's in the repo
 | Path | What it is |
 |---|---|
-| `spreadsheet/FeasaBULL_Diet_Optimizer.xlsx` | The workbook: **Planner** (inputs + answer by meal), **Food Data** (71 foods sorted by group/type), **Diets** (8 presets), **Matrix Model** (A, M, G, c, u, x with MMULT), **Diet Comparison** (A·X for every diet + a typical day), **Optimality Proof** (B⁻¹, det, shadow prices), **Notes & Sources** |
-| `src/lib/dietOptimizer.js` | Drop-in optimizer for the Base44 site (no dependencies). `optimizeDiet(targets, prefs)` |
+| `spreadsheet/FeasaBULL_Diet_Optimizer.xlsx` | The workbook: **Planner** (person → targets → answer by meal), **DRI Tables**, **Food Data** (71 foods sorted by group/type), **Diets** (8 presets), **Matrix Model** (A, M, G, c, u, x with MMULT), **Diet Comparison** (A·X for every diet + a typical day), **Optimality Proof** (B⁻¹, det, shadow prices), **Notes & Sources** |
+| `web/index.html` | **The connected planner page**: person → targets → meal plan, all in the browser. Open the file or host the `web/` folder |
+| `src/lib/personTargets.js` | Person → daily targets (same equations as the FeasaBULL site, with the IOM activity-coefficient fix) |
+| `src/lib/dietOptimizer.js` | Targets → cheapest plan (two-phase Simplex, no dependencies). `optimizeDiet(targets, prefs)` |
 | `docs/BASE44_INTEGRATION.md` | Step-by-step: add the optimizer to the website + the exact prompt for Base44's AI |
 | `docs/MODEL.md` | The math, written for the report/slides |
 | `data/foods.json` | Prices, yields, servings, meal pattern, diet flags, USDA nutrients for all 71 foods |
 | `scripts/` | Rebuild everything from source (see below) |
 | `tests/` | Example diets, 300 random stress cases and impossible cases, all checked against SciPy's HiGHS solver |
 
-## Results for the example person (2,600 kcal, male 19–30, active)
+## Results for the example person
+The site's own placeholder person: male, 21, 5′8″, 155 lb, Active, Maintain → **3,030 kcal, protein ≥ 112 g, fiber ≥ 42 g**.
+
 | Diet | Cost/day | | Diet | Cost/day |
 |---|---|---|---|---|
-| Balanced | $2.53 | | Vegan | $3.13 |
-| High-Protein | $4.13 | | Pescatarian | $2.53 |
-| Low-Carb | $3.46 | | Gluten-Free | $2.59 |
-| Vegetarian | $2.53 | | No Pork | $2.53 |
-| *Typical student day (not optimized)* | *$5.82 — misses fiber, potassium, sodium and fat limits* | | | |
+| Balanced | $3.02 | | Vegan | $3.66 |
+| High-Protein | $4.83 | | Pescatarian | $3.02 |
+| Low-Carb | $4.05 | | Gluten-Free | $3.02 |
+| Vegetarian | $3.02 | | No Pork | $3.02 |
+| *Typical student day (not optimized)* | *$6.89. Misses protein, fiber, potassium, sodium and fat limits* | | | |
 
 ## Team workflow
 1. **Get the code:** `git clone https://github.com/ekbaker58/feasabull-diet-optimizer` (ask Ethan to add you as a collaborator first).
@@ -45,10 +50,10 @@ subject to  b_min ≤ A·x ≤ b_max      nutrient targets (calories, fiber, cal
 Change food prices or add foods in **`scripts/foods_v2.py`** (not in the generated files), then rebuild.
 
 ## Rebuild everything
-Needs Python 3 (`pip install openpyxl numpy scipy`) and Node 18+.
+Needs Python 3 (`pip install openpyxl numpy scipy highspy`) and Node 18+.
 ```bash
 bash scripts/fetch_usda.sh      # once: downloads USDA SR28 into vendor/ (not committed)
-python scripts/build_all.py     # data -> optimizer JS -> solve all diets -> workbook -> checks
+python scripts/build_all.py     # data -> optimizer JS -> planner page -> solve all diets -> workbook -> checks
 ```
 `build_all.py` runs the HiGHS cross-check and stops if any result disagrees.
 

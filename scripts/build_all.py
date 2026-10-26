@@ -8,6 +8,8 @@ def run(*cmd):
 py = sys.executable
 run(py, 'scripts/build_data.py')
 run(py, 'scripts/build_js.py')
+run(py, 'scripts/build_web.py')
+run('node', 'tests/person_targets.test.mjs')
 run('node', 'tests/run_diets.mjs')
 run('node', 'tests/stress.mjs')
 run(py, 'tests/verify_highs.py', 'tests/out/diets.json', 'tests/out/stress.json', 'tests/out/infeasible.json')
