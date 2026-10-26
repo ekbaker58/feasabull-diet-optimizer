@@ -33,18 +33,21 @@ the pivot element, subtract multiples of it from every other row. Rows are scale
 is 1. Pivoting uses the steepest reduced cost, falling back to Bland's rule on degenerate corners so the method cannot cycle.
 
 ## Why the answer is optimal (Optimality Proof sheet)
-At the optimal corner for the example person (Balanced), 7 rules are tight. With the 7 basic foods as unknowns
-and the 3 foods held at their cap moved to the right-hand side, the tight rules form a **square system**
+At the optimal corner for the example person (Balanced), 8 rules are tight (calories at the −5% edge, protein,
+calcium, carbs ≤ 65% of kcal, breakfast ≥ 20% of kcal, vegetables, fruit, beans & lentils cap). With the 8 basic
+foods as unknowns and the 4 foods held at their cap (peanut butter, pinto beans, white rice, broccoli) moved to the
+right-hand side, the tight rules form a **square system**
 
   **B x_B = r**, with r = b_T − N u_N,
 
-where B is 7 × 7 and det(B) ≠ 0, so **x_B = B⁻¹ r** is unique and reproduces the Simplex answer.
+where B is 8 × 8 and det(B) ≈ −1.43 × 10¹¹ ≠ 0, so **x_B = B⁻¹ r** is unique and reproduces the Simplex answer.
 The same inverse gives the **shadow prices** yᵀ = c_Bᵀ B⁻¹. For example, each extra cup of vegetables
-costs about $0.31/day. The **reduced costs** d = c − yᵀG_T are ≥ 0 for every food not eaten and ≤ 0
+costs about $0.29/day. The **reduced costs** d = c − yᵀG_T are ≥ 0 for every food not eaten and ≤ 0
 for every food at its cap. That is the certificate that no swap can lower the cost.
 
-*Degeneracy:* bananas sit exactly at their cap **and** make the fruit rule tight. They are treated as basic,
-which is the standard way to handle a degenerate corner.
+*Degeneracy:* the basis comes from the corner the Simplex method finishes on, and two basic foods sit on a bound:
+lentils are basic at 0, and bananas sit exactly at their cap **and** make the fruit rule tight. Keeping them in the
+basis is the standard way to handle a degenerate corner and keeps B square.
 
 ## Verification
 `tests/verify_highs.py` re-solves every model with SciPy's HiGHS solver:
