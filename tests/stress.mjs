@@ -1,5 +1,6 @@
 // 300 random people/preferences -> tests/out/stress.json (checked by verify_highs.py)
-import { optimizeDiet, buildModel, FOODS, DIETS } from '../src/lib/dietOptimizer.js';
+import { optimizeDiet, buildModel, FOODS, DIETS, ALLERGENS } from '../src/lib/dietOptimizer.js';
+
 import { writeFileSync, mkdirSync } from 'fs';
 mkdirSync(new URL('./out/', import.meta.url), { recursive: true });
 let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -12,8 +13,11 @@ for (let k = 0; k < 300; k++) {
     priceSource: rnd() < 0.3 ? 'bls' : 'walmart' };
   if (rnd() < 0.3) p.mustInclude = { [ids[Math.floor(rnd() * ids.length)]]: 1 };
   if (rnd() < 0.3) p.settings = { max_protein_share: 0.25 + rnd() * 0.2, min_meal_protein_share: 0.15 + rnd() * 0.1 };
+  if (rnd() < 0.25) p.foodSet = 'core';
+  if (rnd() < 0.25) p.avoid = ALLERGENS.filter(() => rnd() < 0.3);
+  if (rnd() < 0.4) p.weights = Object.fromEntries(ids.filter(() => rnd() < 0.15).map(id => [id, 0.4 + rnd() * 2]));
   const r = optimizeDiet(t, p), m = buildModel(t, p);
-  out.push({ status: r.status, cost: r.costPerDay ?? null, c: m.c, rows: m.rows, senses: m.senses, rhs: m.rhs, x: r.model?.x ?? null });
+  out.push({ status: r.status, cost: r.objective ?? null, c: m.cObj, rows: m.rows, senses: m.senses, rhs: m.rhs, x: r.model?.x ?? null });
 }
 writeFileSync(new URL('./out/stress.json', import.meta.url), JSON.stringify(out));
 const cnt = s => out.filter(o => o.status === s).length;
@@ -22,7 +26,10 @@ console.log(`stress: ${cnt('optimal')} optimal, ${cnt('infeasible')} infeasible,
 const imp = [
   [{ calories: 2600, fiber: 38, calcium: 1000, iron: 8, potassium: 3400, vitc: 90, sodium: 2300 }, { diet: 'Vegan', exclude: ['soy_milk', 'tofu', 'peanut_butter', 'canola_oil', 'olive_oil', 'almonds', 'avocado'] }],
   [{ calories: 2600, fiber: 38, calcium: 1000, iron: 8, potassium: 3400, vitc: 90, sodium: 2300, proteinMin: 400 }, { diet: 'Balanced' }],
-  [{ calories: 9000, fiber: 38, calcium: 1000, iron: 8, potassium: 3400, vitc: 90, sodium: 2300 }, { diet: 'Balanced' }],
+  // 9,000 kcal was impossible with the 71 core foods (meal-balance rules); with all foods it is feasible, so the case keeps its
+  // original food list, and a larger day tests the full list.
+  [{ calories: 9000, fiber: 38, calcium: 1000, iron: 8, potassium: 3400, vitc: 90, sodium: 2300 }, { diet: 'Balanced', foodSet: 'core' }],
+  [{ calories: 20000, fiber: 38, calcium: 1000, iron: 8, potassium: 3400, vitc: 90, sodium: 2300 }, { diet: 'Balanced' }],
 ];
 const impOut = imp.map(([t, p]) => { const r = optimizeDiet(t, p), m = buildModel(t, p);
   console.log(`impossible case -> ${r.status}: ${(r.reasons || []).join(' | ')}`);

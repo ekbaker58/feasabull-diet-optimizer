@@ -1,11 +1,12 @@
 {
   "name": "feasabull-diet-optimizer",
   "version": "2.0.0",
-  "description": "Linear-programming (Simplex) diet optimizer for the FeasaBULL Calories site — EGN4450 Team 9",
+  "description": "Linear-programming (Simplex) diet optimizer for the FeasaBULL Calories site \u2014 EGN4450 Team 9",
   "type": "module",
   "main": "src/lib/dietOptimizer.js",
   "scripts": {
-    "test": "node tests/person_targets.test.mjs && node tests/run_diets.mjs && node tests/stress.mjs && python3 tests/verify_highs.py tests/out/diets.json tests/out/stress.json tests/out/infeasible.json"
+    "test": "node tests/person_targets.test.mjs && node tests/run_diets.mjs && node tests/stress.mjs && node tests/options.mjs && python3 tests/verify_highs.py tests/out/diets.json tests/out/stress.json tests/out/infeasible.json tests/out/options.json",
+    "test:web": "node tests/web_smoke.mjs"
   },
   "license": "UNLICENSED",
   "private": true

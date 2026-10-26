@@ -38,7 +38,8 @@ h1 { font-weight: 900; font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.01e
 @media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
 form.panel { display: grid; gap: 16px; position: sticky; top: max(12px, env(safe-area-inset-top, 0px)); }
-@media (max-width: 860px) { form.panel { position: static; } }
+form.panel { max-height: calc(100vh - 24px); overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 860px) { form.panel { position: static; max-height: none; overflow: visible; } }
 fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 0; }
 legend, .label { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; padding: 0; }
 .seg { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -61,7 +62,8 @@ details.excl summary { cursor: pointer; font-weight: 700; font-size: 14px; }
 .excl .g { display: grid; gap: 2px; }
 .excl .g > span { font-weight: 700; font-size: 13px; }
 .excl label { font-size: 13.5px; display: flex; gap: 6px; align-items: center; }
-.results { display: grid; gap: 22px; min-width: 0; }
+.results { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; min-width: 0; }
+.results > *, .two > *, .top > * { min-width: 0; }
 /* Nutrition Facts style targets */
 .facts { background: var(--panel); border: 2px solid var(--rule); padding: 10px 14px 12px; font-family: var(--display); max-width: 100%; }
 .facts h2 { font-weight: 900; font-size: 30px; line-height: 1; letter-spacing: -0.01em; }
@@ -113,16 +115,65 @@ h2.sec { font-weight: 800; font-size: 20px; }
 .secrow { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .reasons { margin: 0; padding-left: 18px; }
 @media (prefers-reduced-motion: no-preference) { .fade { animation: fade 0.25s ease-out; } @keyframes fade { from { opacity: 0.4; } to { opacity: 1; } } }
+/* ---- options, food picker, week plan (v3) ---- */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips input { position: absolute; opacity: 0; pointer-events: none; }
+.chips label { border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; font-size: 13.5px; cursor: pointer; background: var(--panel); }
+.chips input:checked + label { background: var(--bad-soft); color: var(--bad); border-color: var(--bad); font-weight: 700; }
+.chips input:checked + label::before { content: "✕ "; }
+.chips input:focus-visible + label { outline: 2px solid var(--focus); outline-offset: 2px; }
+.money { display: flex; align-items: center; gap: 8px; }
+.money input { max-width: 130px; }
+.picker-tools { display: grid; gap: 6px; margin-top: 10px; }
+.picker-tools input[type=search] { width: 100%; font: 15px var(--body); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+.picker { display: grid; gap: 12px; max-height: 380px; overflow: auto; padding-right: 4px; margin-top: 6px; }
+.picker .g { display: grid; gap: 2px; }
+.picker .g > span { font-weight: 700; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+.pf { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 13.5px; padding: 2px 0; }
+.pf .nm small { color: var(--muted); font-size: 11.5px; }
+.pf .tg { display: flex; gap: 4px; }
+.pf button { font: 700 12.5px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 6px; padding: 2px 8px; cursor: pointer; min-width: 34px; }
+.pf button[aria-pressed="true"].like { background: var(--ok-soft); color: var(--ok); border-color: var(--ok); }
+.pf button[aria-pressed="true"].never { background: var(--bad-soft); color: var(--bad); border-color: var(--bad); }
+button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.linkbtn { font: 700 13px var(--body); background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.opt { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 8px; align-content: start; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.opt[aria-pressed="true"] { border: 2px solid var(--ink); padding: 13px; box-shadow: 0 2px 0 var(--ink); }
+.opt .t { font-family: var(--display); font-weight: 800; font-size: 16px; }
+.opt .p { font-family: var(--display); font-weight: 900; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.opt .p small { font-size: 13px; font-weight: 700; color: var(--muted); }
+.opt .d { font-size: 13px; color: var(--muted); }
+.opt .f { font-size: 13px; }
+.tag { display: inline-block; font-size: 11.5px; font-weight: 700; border-radius: 4px; padding: 1px 6px; background: var(--accent-soft); color: var(--accent); }
+.tag.over { background: var(--bad-soft); color: var(--bad); }
+.tag.est { background: transparent; border: 1px solid var(--line); color: var(--muted); font-weight: 400; }
+.mat td.num, .mat th.num { white-space: nowrap; }
+.mat td.heat { font-variant-numeric: tabular-nums; text-align: right; }
+.two { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+#sim th { white-space: nowrap; text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--ink); }
+@media (max-width: 760px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.days { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+.days label { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.days input { width: 64px; }
+.totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.totals div { border-top: 3px solid var(--ink); padding-top: 6px; }
+.totals b { display: block; font-family: var(--display); font-size: 24px; font-variant-numeric: tabular-nums; }
+.totals span { font-size: 13px; color: var(--muted); }
+tr.grp td { font-family: var(--display); font-weight: 800; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 12px; }
+tr.cur td { background: var(--accent-soft); }
+.warn { color: var(--warn); font-weight: 700; }
 </style>
 
 <div class="wrap">
   <header>
     <h1>FeasaBULL Meal Planner</h1>
-    <p class="lede">Enter your numbers once. The planner works out your daily targets with the same equations as FeasaBULL Calories, then uses linear programming to find the cheapest day of food that meets every target.</p>
+    <p class="lede">Enter your numbers once. The planner works out your daily targets with the same equations as FeasaBULL Calories, then uses linear programming to build several days of food that meet every target, ranked by cost and shaped by what you like.</p>
     <ol class="steps" aria-label="How it works">
       <li><b>1</b> You</li><li class="arrow" aria-hidden="true">→</li>
       <li><b>2</b> Daily targets (EER + DRI)</li><li class="arrow" aria-hidden="true">→</li>
-      <li><b>3</b> Cheapest plan (Simplex)</li>
+      <li><b>3</b> Plan options (Simplex)</li><li class="arrow" aria-hidden="true">→</li>
+      <li><b>4</b> Your week and shopping list</li>
     </ol>
   </header>
 
@@ -150,10 +201,30 @@ h2.sec { font-weight: 800; font-size: 20px; }
         <select id="diet" name="diet"></select>
         <span class="small" id="diet-desc"></span>
       </fieldset>
-      <fieldset><legend>Prices</legend>
-        <select id="psrc" name="psrc"><option value="walmart">Walmart, October 2026</option><option value="bls">BLS U.S. average, September 2026</option></select>
+      <fieldset><legend>Allergies and foods to avoid</legend>
+        <div class="chips" id="allergy"></div>
+        <span class="small">Removes foods that are the allergen. Packaged foods can still contain traces, so always read the label.</span>
       </fieldset>
-      <details class="excl"><summary>Foods I won't eat <span class="small" id="excl-count"></span></summary><div class="groups" id="excl"></div></details>
+      <details class="excl" id="picker-box"><summary>Foods you like or never eat <span class="small" id="pick-count"></span></summary>
+        <div class="picker-tools">
+          <input type="search" id="pick-search" placeholder="Search 146 foods" aria-label="Search foods">
+          <span class="small">♥ = pick it more often (it is treated as 40% cheaper when choosing; you still pay the real price). ✕ = never use it.</span>
+          <div class="row" style="flex-wrap:wrap"><button type="button" class="linkbtn" id="pick-clear">Clear all</button><label class="small" for="nosnack" style="display:flex;gap:6px;align-items:center;flex:0 0 auto"><input type="checkbox" id="nosnack">Skip chips, cookies and sweets</label></div>
+        </div>
+        <div class="picker" id="picker"></div>
+      </details>
+      <fieldset><legend>Daily food budget (optional)</legend>
+        <div class="money"><span class="unit">$</span><input type="number" id="budget" min="0" step="0.25" placeholder="none" aria-label="Daily budget in dollars"><span class="unit">per day</span></div>
+      </fieldset>
+      <details class="excl"><summary>Food list and prices</summary>
+        <div style="display:grid;gap:6px;margin-top:8px">
+          <label class="small" for="fset">Foods the planner may use</label>
+          <select id="fset" name="fset"><option value="all">All 146 foods</option><option value="core">Core 71 foods (class baseline)</option></select>
+          <label class="small" for="psrc">Prices</label>
+          <select id="psrc" name="psrc"><option value="walmart">Store prices where we have them (Walmart, Oct 2026)</option><option value="bls">National averages where BLS has one (Sep 2026)</option></select>
+          <span class="small">75 of the foods use U.S. average prices (BLS or USDA ERS) because Walmart's site blocks automated lookups. Those are marked “U.S. avg.” in the shopping list.</span>
+        </div>
+      </details>
       <details class="excl"><summary>Calculator settings</summary>
         <div style="display:grid;gap:6px;margin-top:8px">
           <label class="small" for="coef">Activity coefficients</label>
@@ -169,14 +240,41 @@ h2.sec { font-weight: 800; font-size: 20px; }
         <div class="facts" id="facts"></div>
         <div class="panel cost" id="cost"></div>
       </div>
-      <div><div class="secrow"><h2 class="sec">Your day</h2><span class="small">Lunch and dinner share one batch-cooked base: cook once, eat twice.</span></div></div>
+
+      <div style="display:grid;gap:10px">
+        <div class="secrow"><h2 class="sec">Your options</h2><span class="small" id="opt-note">Each option is its own linear program. All of them meet every target; they differ in cost and in which foods they use.</span></div>
+        <div class="opts" id="opts"></div>
+      </div>
+
+      <div><div class="secrow"><h2 class="sec" id="day-title">Your day</h2><span class="small">Lunch and dinner share one batch-cooked base: cook once, eat twice.</span></div></div>
       <div class="meals" id="meals"></div>
-      <div class="panel"><h2 class="sec">Plan vs. targets</h2><div class="tablewrap"><table id="check"></table></div></div>
+
+      <div class="two">
+        <div class="panel"><h2 class="sec">Plan vs. targets</h2><div class="tablewrap"><table id="check"></table></div></div>
+        <div class="panel"><h2 class="sec">How different are the menus?</h2>
+          <p class="small">Cosine similarity of where each menu's calories come from: 1.00 = same foods in the same proportions, 0 = no foods in common.</p>
+          <div class="tablewrap"><table class="mat" id="sim"></table></div></div>
+      </div>
+
+      <div class="panel"><h2 class="sec">Options side by side (A·X)</h2>
+        <p class="small">X holds one column of grams per option; multiplying by the nutrient matrix A gives every nutrient for every option at once.</p>
+        <div class="tablewrap"><table class="mat" id="ax"></table></div></div>
+
+      <div class="panel"><div class="secrow"><h2 class="sec">Every diet for you</h2><span class="small" id="diets-note">Cheapest plan for each diet with your allergies and food choices.</span></div>
+        <div class="tablewrap"><table id="diets"></table></div></div>
+
+      <div class="panel" style="display:grid;gap:12px"><h2 class="sec">Your week and shopping list</h2>
+        <p class="small">Choose how many days to eat each option. The week's food is X·d (grams per option times days per option). Packaged foods round up to whole packages; produce and meat sold by the pound are bought by weight.</p>
+        <div class="days" id="days"></div>
+        <div class="totals" id="week-totals"></div>
+        <div class="tablewrap"><table id="shop"></table></div>
+      </div>
+
       <details class="panel math" id="math"><summary><b>Show the math</b></summary><div id="math-body" class="math"></div></details>
       <div class="notes">
-        <p>Targets: IOM Estimated Energy Requirement and Dietary Reference Intakes, the same method as FeasaBULL Calories. Nutrients: USDA SR28. Prices: Walmart, Oct 2026 (regular prices), or BLS U.S. city averages.</p>
-        <p>The plan is the cheapest combination of 71 foods that meets every target. Limits keep it realistic: no single food supplies more than 35% of the protein, every main meal carries at least 20% of the protein, and meat, beans, cheese, grains, oils and snacks are capped as groups.</p>
-        <p>Educational estimates for healthy people 14 and older, not medical advice. Unofficial student project, EGN4450 Team 9.</p>
+        <p>Targets: IOM Estimated Energy Requirement and Dietary Reference Intakes, the same method as FeasaBULL Calories. Nutrients: USDA SR28. Prices: Walmart (Oct 2026, regular prices) for the 71 core foods; BLS U.S. city averages (Sep 2026) or USDA ERS 2023 averages scaled to Sep 2026 with the BLS Consumer Price Index for the 75 added foods. U.S. averages are estimates, not a store's shelf price.</p>
+        <p>Limits keep plans realistic: no single food supplies more than 35% of the protein, every main meal carries at least 20% of the protein, and meat, beans, cheese, grains, oils and snacks are capped as groups. These are design choices by the team, not medical rules.</p>
+        <p>Educational estimates for healthy people 14 and older, not medical advice. Allergy filters cannot see a product's label. Unofficial student project, EGN4450 Team 9.</p>
       </div>
     </section>
   </div>
@@ -187,28 +285,68 @@ h2.sec { font-weight: 800; font-size: 20px; }
 
 const $ = (id) => document.getElementById(id);
 const fmt = (n, d = 0) => Number(n).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const money = (n) => "$" + fmt(Math.round(n * 1e6) / 1e6, 2);   // round first so equal costs (e.g. 2.8750 vs 2.87499999) print the same
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const NICE = { kcal: "Calories", protein: "Protein", carb: "Carbohydrate", fat: "Fat", fiber: "Fiber", sugar: "Total sugars",
-  calcium: "Calcium", iron: "Iron", potassium: "Potassium", sodium: "Sodium", vitc: "Vitamin C" };
+  calcium: "Calcium", iron: "Iron", potassium: "Potassium", sodium: "Sodium", vitc: "Vitamin C", satfat: "Saturated fat" };
+const BY_ID = Object.fromEntries(FOODS.map((f) => [f.id, f]));
+const ATTR_LABEL = Object.fromEntries(ATTRS.map((a) => [a.key, a.label]));
+const store = { get(k, d) { try { const v = localStorage.getItem("feasabull." + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+                set(k, v) { try { localStorage.setItem("feasabull." + k, JSON.stringify(v)); } catch { /* storage unavailable */ } } };
+
+// ---- state kept outside the form controls
+const likes = new Set(store.get("likes", [])), never = new Set(store.get("never", []));
+let chosen = 0, days = null, lastKey = "", dietToken = 0;
 
 // ---- build the form controls from the data
 $("acts").innerHTML = ACTIVITY.map((a) => `<input type="radio" name="activity" id="a-${a.id}" value="${a.id}" ${a.id === "active" ? "checked" : ""}><label for="a-${a.id}"><strong>${a.label}</strong><span>${a.blurb}</span></label>`).join("");
 $("goals").innerHTML = GOALS.map((g) => `<input type="radio" name="goal" id="g-${g.id}" value="${g.id}" ${g.id === "maintain" ? "checked" : ""}><label for="g-${g.id}">${g.label}</label>`).join("");
 $("diet").innerHTML = DIETS.map((d) => `<option value="${esc(d.name)}">${esc(d.name)}</option>`).join("");
+const savedAvoid = new Set(store.get("avoid", []));
+$("allergy").innerHTML = ALLERGENS.map((a) => `<input type="checkbox" id="al-${a}" name="avoid" value="${a}" ${savedAvoid.has(a) ? "checked" : ""}><label for="al-${a}">${esc(ATTR_LABEL[a])}</label>`).join("");
 const groups = [...new Set(FOODS.map((f) => f.group))];
-$("excl").innerHTML = groups.map((g) => `<div class="g"><span>${esc(g)}</span>${FOODS.filter((f) => f.group === g).map((f) =>
-  `<label for="x-${f.id}"><input type="checkbox" id="x-${f.id}" value="${f.id}" name="exclude">${esc(f.name)}</label>`).join("")}</div>`).join("");
+$("picker").innerHTML = groups.map((g) => `<div class="g" data-group="${esc(g)}"><span>${esc(g)}</span>${FOODS.filter((f) => f.group === g).map((f) =>
+  `<div class="pf" data-id="${f.id}" data-name="${esc(f.name.toLowerCase())}"><span class="nm">${esc(f.name)}${f.core ? "" : ' <small>new</small>'}</span><span class="tg">` +
+  `<button type="button" class="like" data-act="like" aria-label="Like ${esc(f.name)}" aria-pressed="false">♥</button>` +
+  `<button type="button" class="never" data-act="never" aria-label="Never use ${esc(f.name)}" aria-pressed="false">✕</button></span></div>`).join("")}</div>`).join("");
+$("nosnack").checked = store.get("nosnack", false);
+function paintPicker() {
+  for (const row of document.querySelectorAll(".pf")) {
+    const id = row.dataset.id;
+    row.querySelector(".like").setAttribute("aria-pressed", String(likes.has(id)));
+    row.querySelector(".never").setAttribute("aria-pressed", String(never.has(id)));
+  }
+  $("pick-count").textContent = likes.size || never.size ? `(${likes.size} liked · ${never.size} never)` : "";
+  store.set("likes", [...likes]); store.set("never", [...never]);
+}
+$("picker").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  const id = b.closest(".pf").dataset.id;
+  if (b.dataset.act === "like") { never.delete(id); likes.has(id) ? likes.delete(id) : likes.add(id); }
+  else { likes.delete(id); never.has(id) ? never.delete(id) : never.add(id); }
+  paintPicker(); schedule();
+});
+$("pick-clear").addEventListener("click", () => { likes.clear(); never.clear(); paintPicker(); schedule(); });
+$("pick-search").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  for (const row of document.querySelectorAll(".pf")) row.hidden = q && !row.dataset.name.includes(q);
+  for (const g of document.querySelectorAll(".picker .g")) g.hidden = ![...g.querySelectorAll(".pf")].some((r) => !r.hidden);
+});
+paintPicker();
 
 function readForm() {
   const v = (n) => document.querySelector(`input[name="${n}"]:checked`)?.value;
   const units = v("units");
   $("std-fields").hidden = units !== "standard"; $("met-fields").hidden = units !== "metric";
+  const avoid = [...document.querySelectorAll('input[name="avoid"]:checked')].map((c) => c.value);
+  store.set("avoid", avoid); store.set("nosnack", $("nosnack").checked);
+  const exclude = [...never, ...($("nosnack").checked ? FOODS.filter((f) => f.type === "Snacks").map((f) => f.id) : [])];
+  const budget = parseFloat($("budget").value);
   return {
     form: { units, sex: v("sex"), age: $("age").value, ft: $("ft").value, inch: $("inch").value, lb: $("lb").value, cm: $("cm").value, kg: $("kg").value,
             activity: v("activity"), goal: v("goal") },
-    prefs: { diet: $("diet").value, priceSource: $("psrc").value,
-             exclude: [...document.querySelectorAll('input[name="exclude"]:checked')].map((c) => c.value) },
-    coef: $("coef").value,
+    prefs: { diet: $("diet").value, priceSource: $("psrc").value, foodSet: $("fset").value, avoid, exclude, likes: [...likes].filter((id) => !exclude.includes(id)) },
+    coef: $("coef").value, budget: budget > 0 ? budget : null,
   };
 }
 
@@ -217,12 +355,13 @@ function servingText(item) {
   const q = s >= 0.95 && s <= 1.05 ? item.serving : `${fmt(s, s < 10 ? 1 : 0)} × ${item.serving}`;
   return `${q} · ${fmt(item.grams)} g`;
 }
+const mainFoods = (r, k = 5) => r.plan.filter((i) => i.grams >= 15).sort((a, b) => b.kcal - a.kcal).slice(0, k).map((i) => i.name);
 
+let state = null;
 function render() {
-  const { form, prefs, coef } = readForm();
+  const { form, prefs, coef, budget } = readForm();
   const d = DIETS.find((x) => x.name === prefs.diet);
   $("diet-desc").textContent = d ? d.desc : "";
-  $("excl-count").textContent = prefs.exclude.length ? `(${prefs.exclude.length})` : "";
   const { errors, person } = personFromForm(form);
   const errs = Object.values(errors);
   $("form-err").textContent = errs.join(" ");
@@ -230,11 +369,15 @@ function render() {
 
   const T = calculateTargets(person, { coefficients: coef });
   const t = T.optimizerTargets;
-  const r = optimizeDiet(t, prefs);
+  const key = JSON.stringify([t, prefs]);
+  if (key !== lastKey) { chosen = 0; days = null; }
+  lastKey = key;
+  const P = planOptions(t, prefs, { count: 3 });
+  state = { T, t, P, prefs, budget, person, form };
   const actLabel = ACTIVITY.find((a) => a.id === person.activity).label;
   const heightTxt = form.units === "metric" ? `${person.heightCm} cm` : `${form.ft}′${form.inch || 0}″`;
   const weightTxt = form.units === "metric" ? `${person.weightKg} kg` : `${form.lb} lb`;
-
+  const sodiumMax = Math.min(t.sodium, d?.sodium_max ?? Infinity);
   $("facts").innerHTML = `
     <h2>Daily Targets</h2>
     <div class="who">${person.sex === "male" ? "Male" : "Female"}, ${person.age} · ${heightTxt} · ${weightTxt} · ${actLabel} · ${T.goal}</div>
@@ -245,64 +388,172 @@ function render() {
     <div class="line"><span><b>Iron</b> at least</span><span>${fmt(t.iron)} mg</span></div>
     <div class="line"><span><b>Potassium</b> at least</span><span>${fmt(t.potassium)} mg</span></div>
     <div class="line"><span><b>Vitamin C</b> at least</span><span>${fmt(t.vitc)} mg</span></div>
-    <div class="line"><span><b>Sodium</b> under</span><span>${fmt(t.sodium)} mg</span></div>
+    <div class="line"><span><b>Sodium</b> under</span><span>${fmt(sodiumMax)} mg</span></div>
+    ${d?.satfat_max != null ? `<div class="line"><span><b>Saturated fat</b> under</span><span>${fmt(d.satfat_max * 100)}% of kcal</span></div>` : ""}
     <div class="foot">Maintenance ${fmt(T.maintenance)} kcal${T.calories !== T.maintenance ? `, ${T.calories > T.maintenance ? "+" : "−"}${fmt(Math.abs(T.calories - T.maintenance))} for your goal` : ""}. Protein is 1.6 g per kg, kept within 10–30% of calories. BMI ${T.bmi.value} (${T.bmi.category}).</div>`;
 
-  if (r.status !== "optimal") {
-    $("cost").innerHTML = `<span class="label">${esc(prefs.diet)}</span><div class="pill bad">No plan meets every rule</div><ul class="reasons">${(r.reasons || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
-    $("meals").innerHTML = ""; $("check").innerHTML = ""; $("math-body").innerHTML = "";
+  const nAllowed = FOODS.filter((f) => isAllowed(f, getDiet(prefs.diet), prefs.exclude, prefs)).length;
+  if (P.status !== "optimal") {
+    $("cost").innerHTML = `<span class="label">${esc(prefs.diet)} · ${nAllowed} foods allowed</span><div class="pill bad">No plan meets every rule</div><ul class="reasons">${(P.reasons || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    for (const id of ["opts", "meals", "check", "sim", "ax", "shop", "days", "week-totals", "math-body"]) $(id).innerHTML = "";
+    $("day-title").textContent = "Your day";
+    renderDiets();
     return;
   }
-  const tot = r.totals, kc = tot.kcal;
-  const pP = (4 * tot.protein) / kc * 100, pC = (4 * tot.carb) / kc * 100, pF = (9 * tot.fat) / kc * 100;
+  const low = P.options[0].result;
+  const budgetLine = budget == null ? "" : low.costPerDay <= budget + 1e-9
+    ? `<div class="pill ok">✓ Lowest-cost plan fits your ${money(budget)}/day budget</div>`
+    : `<div class="pill bad">Lowest possible is ${money(low.costPerDay)}/day, above your ${money(budget)} budget</div>`;
   $("cost").innerHTML = `
-    <span class="label">Cheapest ${esc(r.diet)} plan</span>
-    <div class="big">$${fmt(r.costPerDay, 2)}<small> / day</small></div>
-    <div class="small">$${fmt(r.costPerWeek, 2)} a week · ${prefs.priceSource === "bls" ? "BLS U.S. average prices" : "Walmart prices"}</div>
-    <div class="pill ok">✓ Meets every target</div>
-    <div class="macro"><span class="label">Where the calories come from</span>
-      <div class="bar" role="img" aria-label="Protein ${fmt(pP)}%, carbohydrate ${fmt(pC)}%, fat ${fmt(pF)}%"><i style="width:${pP}%;background:var(--meat)"></i><i style="width:${pC}%;background:var(--grain)"></i><i style="width:${pF}%;background:var(--fat)"></i></div>
-      <div class="legend"><span style="--c:var(--meat)">Protein ${fmt(pP)}%</span><span style="--c:var(--grain)">Carbs ${fmt(pC)}%</span><span style="--c:var(--fat)">Fat ${fmt(pF)}%</span></div></div>`;
+    <span class="label">${esc(P.diet)} · ${nAllowed} of ${FOODS.length} foods allowed</span>
+    <div class="big">${money(low.costPerDay)}<small> / day</small></div>
+    <div class="small">Lowest possible cost · ${money(low.costPerWeek)} a week</div>
+    <div class="pill ok">✓ Every option meets every target</div>${budgetLine}`;
+  if (chosen >= P.options.length) chosen = 0;
+  if (!days || days.length !== P.options.length) days = P.options.length === 4 ? [2, 2, 2, 1] : P.options.length === 3 ? [3, 2, 2] : P.options.length === 2 ? [4, 3] : [7];
+  renderOptions(); renderDay(); renderCompare(); renderWeek(); renderMath(); renderDiets();
+}
 
+function renderOptions() {
+  const { P, budget } = state;
+  $("opts").innerHTML = P.options.map((o, k) => {
+    const r = o.result;
+    const extra = o.extraPerDay > 0.005 ? `+${money(o.extraPerDay)}/day vs lowest` : "lowest cost";
+    const over = budget != null && r.costPerDay > budget + 1e-9 ? ' <span class="tag over">over budget</span>' : "";
+    return `<button type="button" class="opt" data-k="${k}" aria-pressed="${k === chosen}">
+      <span class="t">${o.letter} · ${esc(o.title)}${over}</span>
+      <span class="p">${money(r.costPerDay)}<small> / day</small></span>
+      <span class="d">${extra} · ${money(r.costPerWeek)}/week</span>
+      <span class="f">${esc(mainFoods(r).join(", "))}</span>
+      <span class="d">${esc(o.blurb)}</span></button>`;
+  }).join("");
+}
+$("opts").addEventListener("click", (e) => {
+  const b = e.target.closest(".opt"); if (!b || !state) return;
+  chosen = Number(b.dataset.k); renderOptions(); renderDay();
+});
+
+function renderDay() {
+  const { P, t, prefs } = state;
+  const o = P.options[chosen], r = o.result, tot = r.totals, kc = tot.kcal;
+  $("day-title").textContent = `Your day: ${o.letter} · ${o.title} (${money(r.costPerDay)})`;
   $("meals").innerHTML = r.meals.map((m) => `
     <article class="meal fade"><header><h3>${m.meal}</h3><span>${fmt(m.kcal)} kcal · ${fmt(m.protein)} g protein</span></header>
-      ${m.items.filter((i) => i.grams >= 10).map((i) => `<div class="item"><span class="n">${esc(i.name)}</span><span class="k">${fmt(i.kcal)} kcal<br>${fmt(i.protein)} g P</span><span class="q">${esc(servingText(i))}</span></div>`).join("") || `<span class="small">Nothing at this meal.</span>`}
+      ${m.items.filter((i) => i.grams >= 10).map((i) => `<div class="item"><span class="n">${esc(i.name)}${likes.has(i.id) ? " ♥" : ""}</span><span class="k">${fmt(i.kcal)} kcal<br>${fmt(i.protein)} g P</span><span class="q">${esc(servingText(i))}</span></div>`).join("") || `<span class="small">Nothing at this meal.</span>`}
       ${m.items.some((i) => i.grams < 10) ? `<div class="extra">Plus a little: ${m.items.filter((i) => i.grams < 10).map((i) => `${esc(i.name.toLowerCase())} (${fmt(i.grams)} g)`).join(", ")}</div>` : ""}
     </article>`).join("");
-
+  const d = getDiet(prefs.diet), sodiumMax = Math.min(t.sodium, d.sodium_max ?? Infinity);
+  const pct = (g, f) => (f * g) / kc * 100;
   const rows = [
-    ["kcal", "kcal", `${fmt(Math.round(kc))}`, `${fmt(Math.floor(t.calories * 0.95))}–${fmt(Math.ceil(t.calories * 1.05))}`, Math.abs(kc - t.calories) <= t.calories * 0.05 + 0.5],
+    ["kcal", "kcal", fmt(Math.round(kc)), `${fmt(Math.floor(t.calories * 0.95))}–${fmt(Math.ceil(t.calories * 1.05))}`, Math.abs(kc - t.calories) <= t.calories * 0.05 + 0.5],
     ["protein", "g", fmt(tot.protein), `≥ ${fmt(t.proteinMin)}`, tot.protein >= t.proteinMin - 0.5],
     ["fiber", "g", fmt(tot.fiber), `≥ ${fmt(t.fiber)}`, tot.fiber >= t.fiber - 0.5],
     ["calcium", "mg", fmt(tot.calcium), `≥ ${fmt(t.calcium)}`, tot.calcium >= t.calcium - 0.5],
     ["iron", "mg", fmt(tot.iron, 1), `≥ ${fmt(t.iron)}`, tot.iron >= t.iron - 0.05],
     ["potassium", "mg", fmt(tot.potassium), `≥ ${fmt(t.potassium)}`, tot.potassium >= t.potassium - 0.5],
     ["vitc", "mg", fmt(tot.vitc), `≥ ${fmt(t.vitc)}`, tot.vitc >= t.vitc - 0.5],
-    ["sodium", "mg", fmt(tot.sodium), `≤ ${fmt(t.sodium)}`, tot.sodium <= t.sodium + 0.5],
+    ["sodium", "mg", fmt(tot.sodium), `≤ ${fmt(sodiumMax)}`, tot.sodium <= sodiumMax + 0.5],
   ];
+  if (d.satfat_max != null) rows.push(["satfat", "% kcal", fmt(pct(tot.satfat, 9), 1), `≤ ${fmt(d.satfat_max * 100)}`, pct(tot.satfat, 9) <= d.satfat_max * 100 + 0.05]);
+  const macro = `Protein ${fmt(pct(tot.protein, 4))}% · Carbs ${fmt(pct(tot.carb, 4))}% · Fat ${fmt(pct(tot.fat, 9))}% of calories (${esc(d.name)} allows ${fmt(d.protein[0] * 100)}–${fmt(d.protein[1] * 100)}%, ${fmt(d.carb[0] * 100)}–${fmt(d.carb[1] * 100)}%, ${fmt(d.fat[0] * 100)}–${fmt(d.fat[1] * 100)}%)`;
   $("check").innerHTML = `<thead><tr><th>Nutrient</th><th class="num">Plan</th><th class="num">Target</th><th class="num">Met</th></tr></thead><tbody>${rows.map(([k, u, v, tg, ok]) =>
-    `<tr><td>${NICE[k]} (${u})</td><td class="num">${v}</td><td class="num">${tg}</td><td class="num ${ok ? "yes" : "no"}">${ok ? "✓" : "✗"}</td></tr>`).join("")}</tbody>`;
-
-  const n = r.model.foods.length, chosen = r.plan.length;
-  const xs = r.model.foods.map((id, j) => [id, r.model.x[j], r.model.c[j]]).filter((e) => e[1] > 1e-6);
-  $("math-body").innerHTML = `
-    <p class="small">Same model as the spreadsheet's Matrix Model sheet, solved here in your browser.</p>
-<pre>minimize    cᵀx                      cost per day, c = $ per 100 g edible
-subject to  b_min ≤ A·x ≤ b_max      A is ${NUTRIENTS.length} nutrients × ${n} foods allowed by the ${esc(r.diet)} diet
-            meal, protein-share and food-group rows (${r.model.constraints} rows in total)
-            0 ≤ x ≤ u                x = food amounts in 100 g units
-
-b from step 2: kcal ${fmt(Math.floor(t.calories * 0.95))}–${fmt(Math.ceil(t.calories * 1.05))}, protein ≥ ${t.proteinMin} g, fiber ≥ ${t.fiber} g,
-               calcium ≥ ${t.calcium} mg, iron ≥ ${t.iron} mg, potassium ≥ ${t.potassium} mg, vitamin C ≥ ${t.vitc} mg, sodium ≤ ${t.sodium} mg
-
-Simplex: ${r.pivots} pivots (Gauss-Jordan row operations). ${chosen} of ${n} foods are non-zero.</pre>
-    <div class="tablewrap"><table><thead><tr><th>Food</th><th class="num">x (100 g)</th><th class="num">c ($/100 g)</th><th class="num">c·x</th></tr></thead><tbody>${xs.map(([id, x, c]) =>
-      `<tr><td>${esc(FOODS.find((f) => f.id === id).name)}</td><td class="num mono">${x.toFixed(3)}</td><td class="num mono">${c.toFixed(3)}</td><td class="num mono">$${(c * x).toFixed(2)}</td></tr>`).join("")}
-      <tr><td><b>cᵀx</b></td><td></td><td></td><td class="num mono"><b>$${r.costPerDay.toFixed(2)}</b></td></tr></tbody></table></div>`;
+    `<tr><td>${NICE[k]} (${u})</td><td class="num">${v}</td><td class="num">${tg}</td><td class="num ${ok ? "yes" : "no"}">${ok ? "✓" : "✗"}</td></tr>`).join("")}
+    <tr><td colspan="4" class="small">${macro}</td></tr></tbody>`;
 }
 
+function renderCompare() {
+  const { P } = state;
+  const names = P.options.map((o) => esc(o.title)), letters = P.options.map((o) => o.letter);
+  $("sim").innerHTML = `<thead><tr><th></th>${letters.map((n) => `<th class="num">${n}</th>`).join("")}</tr></thead><tbody>${P.similarity.map((row, a) =>
+    `<tr><th>${letters[a]} · ${names[a]}</th>${row.map((v) => `<td class="heat" style="background:color-mix(in srgb, var(--accent) ${Math.round(v * 45)}%, transparent)">${v.toFixed(2)}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  const keys = ["kcal", "protein", "carb", "fat", "fiber", "calcium", "iron", "potassium", "sodium", "vitc", "satfat"];
+  const unit = Object.fromEntries(NUTRIENTS.map((n) => [n.key, n.unit]));
+  $("ax").innerHTML = `<thead><tr><th>Row of A·X</th>${P.options.map((o) => `<th class="num">${o.letter} · ${esc(o.title)}</th>`).join("")}</tr></thead><tbody>
+    <tr><td><b>Cost per day (cᵀX)</b></td>${P.options.map((o) => `<td class="num"><b>${money(o.result.costPerDay)}</b></td>`).join("")}</tr>
+    ${keys.map((k) => { const i = NUTRIENTS.findIndex((n) => n.key === k); return `<tr><td>${NICE[k]} (${unit[k]})</td>${P.AX[i].map((v) => `<td class="num">${fmt(v, k === "iron" || k === "satfat" ? 1 : 0)}</td>`).join("")}</tr>`; }).join("")}
+    <tr><td>Foods used (≥ 15 g)</td>${P.options.map((o) => `<td class="num">${o.result.plan.filter((i) => i.grams >= 15).length}</td>`).join("")}</tr></tbody>`;
+}
+
+function renderWeek() {
+  const { P, prefs } = state;
+  $("days").innerHTML = P.options.map((o, k) => `<label for="day-${k}"><input type="number" id="day-${k}" data-k="${k}" min="0" max="7" step="1" value="${days[k]}">days of ${o.letter} · ${esc(o.title)}</label>`).join("");
+  paintWeek();
+}
+function paintWeek() {
+  const { P, prefs } = state;
+  const W = weekPlan(P.options.map((o) => o.result), days, { priceSource: prefs.priceSource });
+  const n = days.reduce((s, v) => s + v, 0);
+  $("week-totals").innerHTML = `
+    <div><b>${money(W.checkout)}</b><span>Checkout for ${n} day${n === 1 ? "" : "s"}</span></div>
+    <div><b>${money(W.eaten)}</b><span>Cost of the food you eat (cᵀX·d)</span></div>
+    <div><b>${money(W.leftover)}</b><span>Left over in your pantry (oil, rice, peanut butter and other packs last past the week)</span></div>
+    ${n !== 7 ? `<div><b class="warn">${n} days</b><span>Your days add up to ${n}, not 7.</span></div>` : ""}`;
+  let g = "";
+  $("shop").innerHTML = `<thead><tr><th>Food</th><th>Buy</th><th class="num">Price</th><th class="num">You eat</th></tr></thead><tbody>${W.lines.map((l) => {
+    const head = l.group !== g ? `<tr class="grp"><td colspan="4">${esc(l.group)}</td></tr>` : ""; g = l.group;
+    const buy = l.byWeight ? `${fmt(l.pounds, 1)} lb` : `${l.packages} × ${esc(BY_ID[l.id].product)}`;
+    const est = l.source !== "walmart" ? ' <span class="tag est">U.S. avg.</span>' : "";
+    return `${head}<tr><td>${esc(l.name)}</td><td>${buy}${est}</td><td class="num">${money(l.checkout)}</td><td class="num">${fmt(l.grams)} g</td></tr>`;
+  }).join("")}</tbody>`;
+}
+$("days").addEventListener("input", (e) => {
+  const k = Number(e.target.dataset.k); if (!state || Number.isNaN(k)) return;
+  days[k] = Math.max(0, Math.min(7, Math.round(Number(e.target.value) || 0))); paintWeek(); renderMath();
+});
+
+function renderMath() {
+  const { P, t, prefs } = state;
+  const o = P.options[chosen], r = o.result;
+  const n = r.model.foods.length, m = P.options.length;
+  const wList = Object.entries(o.weights).filter(([id]) => r.model.foods.includes(id));
+  const xs = r.model.foods.map((id, j) => [id, r.model.x[j], r.model.c[j], r.model.cObj[j]]).filter((e) => e[1] > 1e-6);
+  $("math-body").innerHTML = `
+    <p class="small">Same model as the spreadsheet's Matrix Model sheet, solved here in your browser.</p>
+<pre>minimize    (D c)ᵀx                  D = diag(w): the preference matrix (w = 1 unless noted)
+subject to  b_min ≤ A·x ≤ b_max      A is ${NUTRIENTS.length} nutrients × ${n} foods allowed (${esc(r.diet)})
+            macro, meal, protein-share and food-group rows (${r.model.constraints} rows in total)
+            0 ≤ x ≤ u                x = food amounts in 100 g units
+reported cost = cᵀx (the real price; D only changes which foods are chosen)
+
+b from step 2: kcal ${fmt(Math.floor(t.calories * 0.95))}–${fmt(Math.ceil(t.calories * 1.05))}, protein ≥ ${t.proteinMin} g, fiber ≥ ${t.fiber} g,
+               calcium ≥ ${t.calcium} mg, iron ≥ ${t.iron} mg, potassium ≥ ${t.potassium} mg, vitamin C ≥ ${t.vitc} mg
+
+Option "${esc(o.title)}": ${wList.length} foods with w ≠ 1 (liked 0.6, and ×${OPTION_RULES.repeat} for each earlier option that used the food).
+Simplex: ${r.pivots} pivots (Gauss-Jordan row operations). ${r.plan.length} of ${n} foods are non-zero.
+
+Comparing options: X = [x₁ … x${m}] (grams, foods × options)
+  A·X  = every nutrient for every option (table above)
+  S_ab = (e∘x_a)ᵀ(e∘x_b) / (‖e∘x_a‖‖e∘x_b‖)   cosine similarity of calorie vectors (e = calories per gram)
+Your week: d = (${days.join(", ")}) days per option; weekly grams = X·d; checkout rounds each package up.</pre>
+    <div class="tablewrap"><table><thead><tr><th>Food</th><th class="num">x (100 g)</th><th class="num">c ($/100 g)</th><th class="num">w</th><th class="num">c·x</th></tr></thead><tbody>${xs.map(([id, x, c, cw]) =>
+      `<tr><td>${esc(BY_ID[id].name)}</td><td class="num mono">${x.toFixed(3)}</td><td class="num mono">${c.toFixed(3)}</td><td class="num mono">${(cw / c).toFixed(2)}</td><td class="num mono">$${(c * x).toFixed(2)}</td></tr>`).join("")}
+      <tr><td><b>cᵀx</b></td><td></td><td></td><td></td><td class="num mono"><b>$${r.costPerDay.toFixed(2)}</b></td></tr></tbody></table></div>`;
+}
+
+function renderDiets() {
+  const { t, prefs } = state || {};
+  if (!t) return;
+  const token = ++dietToken;
+  $("diets-note").textContent = "Working…";
+  setTimeout(() => {
+    if (token !== dietToken) return;
+    const rows = compareDiets(t, { ...prefs, weights: {} });
+    const ok = rows.filter((r) => r.status === "optimal").sort((a, b) => a.costPerDay - b.costPerDay);
+    $("diets-note").textContent = `Cheapest plan for each diet with your allergies and food choices. ${ok.length} of ${rows.length} diets work for you.`;
+    $("diets").innerHTML = `<thead><tr><th>Diet</th><th class="num">Cost/day</th><th class="num">Protein</th><th></th></tr></thead><tbody>${[...ok, ...rows.filter((r) => r.status !== "optimal")].map((r) =>
+      `<tr class="${r.diet === prefs.diet ? "cur" : ""}"><td><b>${esc(r.diet)}</b><br><span class="small">${esc(r.desc)}</span></td>` +
+      (r.status === "optimal" ? `<td class="num">${money(r.costPerDay)}</td><td class="num">${fmt(r.protein)} g</td>` : `<td colspan="2" class="small no">${esc(r.reasons[0] || "No plan meets every rule")}</td>`) +
+      `<td>${r.diet === prefs.diet ? '<span class="tag">selected</span>' : r.status === "optimal" ? `<button type="button" class="linkbtn" data-diet="${esc(r.diet)}">Use</button>` : ""}</td></tr>`).join("")}</tbody>`;
+  }, 0);
+}
+$("diets").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-diet]"); if (!b) return;
+  $("diet").value = b.dataset.diet; render(); $("diet").focus();
+});
+
 let timer;
-$("form").addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(render, 120); });
+function schedule() { clearTimeout(timer); timer = setTimeout(render, 120); }
+$("form").addEventListener("input", (e) => { if (e.target.id !== "pick-search") schedule(); });
 $("form").addEventListener("submit", (e) => e.preventDefault());
 render();
 </script>

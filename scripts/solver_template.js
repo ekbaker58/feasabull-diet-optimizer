@@ -19,6 +19,12 @@
  *                                                        cheese, grains, oils and snacks as groups)
  *               0 <= x <= u                             (portion caps; u_j = 0 when the diet excludes food j)
  *
+ *   Preferences change only the objective: minimize (D c)^T x, where D = diag(w) is a diagonal preference matrix
+ *   (w_j < 1 for liked foods, > 1 for disliked or already-used foods). The reported cost is always the true c^T x.
+ *   planOptions() solves several such LPs (lowest cost, your picks, variety menus); compareOptions() returns
+ *   A X (nutrients x options) and the cosine-similarity Gram matrix of the options; weekPlan() turns X d into a
+ *   shopping list (d = days per option).
+ *
  * THE SOLVER
  *   Two-phase Simplex on a dense tableau. Each pivot is a Gauss-Jordan elimination step
  *   (scale the pivot row, subtract multiples of it from every other row). Bland's rule
@@ -43,9 +49,12 @@ export function costPer100g(food, { prices = {}, priceSource = "walmart" } = {})
   return food.cost_per_100g;
 }
 
-export function isAllowed(food, diet, exclude = []) {
+/** prefs.exclude: food ids; prefs.avoid: allergy/attribute flags; prefs.foodSet: 'all' (default) | 'core' (the 71 class foods). */
+export function isAllowed(food, diet, exclude = [], prefs = {}) {
   if (exclude.includes(food.id)) return false;
-  return !food.flags.some((f) => diet.forbid.includes(f));
+  if (prefs.foodSet === "core" && !food.core) return false;
+  const avoid = prefs.avoid || [];
+  return !food.flags.some((f) => diet.forbid.includes(f) || avoid.includes(f));
 }
 
 /**
@@ -63,8 +72,9 @@ export function buildModel(targets, prefs = {}) {
   const kcal = Number(targets.calories);
   if (!(kcal > 0)) throw new Error("targets.calories is required");
 
-  const foods = FOODS.filter((f) => isAllowed(f, diet, prefs.exclude || []))
+  const foods = FOODS.filter((f) => isAllowed(f, diet, prefs.exclude || [], prefs))
     .map((f) => ({ ...f, cost100: costPer100g(f, prefs) }));
+  const weights = prefs.weights || {};            // diagonal of the preference matrix D (default 1)
   const n = foods.length;
   const keys = NUTRIENTS.map((k) => k.key);
   const A = keys.map((k) => foods.map((f) => f.per100g[k]));
@@ -77,7 +87,7 @@ export function buildModel(targets, prefs = {}) {
     protein: [targets.proteinMin || 0, null],
     fiber: [targets.fiber, null], calcium: [targets.calcium, null], iron: [targets.iron, null],
     potassium: [targets.potassium, null], vitc: [targets.vitc, null],
-    sodium: [null, targets.sodium], sugar: [null, targets.sugarMax ?? null],
+    sodium: [null, Math.min(targets.sodium ?? Infinity, diet.sodium_max ?? Infinity)], satfat: [null, null], sugar: [null, targets.sugarMax ?? null],
   };
 
   const rows = [], senses = [], rhs = [], labels = [], kinds = [];
@@ -95,6 +105,9 @@ export function buildModel(targets, prefs = {}) {
     add(mac.map((v, j) => f * v - lo * e[j]), ">=", 0, `${k}% >= ${Math.round(lo * 100)}% of kcal`, "macro");
     add(mac.map((v, j) => f * v - hi * e[j]), "<=", 0, `${k}% <= ${Math.round(hi * 100)}% of kcal`, "macro");
   });
+  if (diet.satfat_max != null)                     // saturated fat as a share of the plan's calories (DASH: <= 6%)
+    add(A[keys.indexOf("satfat")].map((v, j) => 9 * v - diet.satfat_max * e[j]), "<=", 0,
+      `satfat% <= ${Math.round(diet.satfat_max * 100)}% of kcal`, "macro");
   // 2. Meal balance: calories per meal, protein per main meal (uses meal matrix M)
   MEALS.forEach((meal, m) => {
     const [lo, hi] = S.meal_kcal[meal];
@@ -130,7 +143,9 @@ export function buildModel(targets, prefs = {}) {
     add(row, "<=", u[j], `${f.id} <= cap`, "cap");
     if (must[f.id]) add(row.slice(), ">=", (f.serving_g * must[f.id]) / 100, `${f.id} >= must-include`, "must");
   });
-  return { diet, settings: S, foods, keys, A, c: foods.map((f) => f.cost100), u, rows, senses, rhs, labels, kinds };
+  const c = foods.map((f) => f.cost100);
+  const cObj = foods.map((f, j) => c[j] * (weights[f.id] ?? 1));     // D c
+  return { diet, settings: S, foods, keys, A, c, cObj, u, rows, senses, rhs, labels, kinds };
 }
 
 /** Gauss-Jordan pivot: make column `col` the unit vector e_r with elementary row operations. */
@@ -278,14 +293,16 @@ function diagnose(model) {
   return ["The rules conflict in combination. Try widening the calorie tolerance or allowing more foods."];
 }
 
-/** Main entry point: person's targets + preferences -> cheapest balanced daily plan, split by meal. */
+/** Main entry point: person's targets + preferences -> cheapest balanced daily plan, split by meal.
+ *  prefs.weights {foodId: w} scales food j's cost in the OBJECTIVE only (minimize (Dc)^T x); costPerDay is the true c^T x. */
 export function optimizeDiet(targets, prefs = {}) {
   const model = buildModel(targets, prefs);
   if (!model.foods.length) return { status: "infeasible", reasons: ["No foods are left after applying the diet and exclusions."] };
-  const sol = simplex(model.c, model.rows, model.senses, model.rhs);
+  const sol = simplex(model.cObj, model.rows, model.senses, model.rhs);
   if (sol.status !== "optimal")
     return { status: sol.status, reasons: sol.status === "infeasible" ? diagnose(model) : [], diet: model.diet.name };
   const x = sol.x.map((v) => (v < 1e-9 ? 0 : v));
+  const cost = model.c.reduce((s, cj, j) => s + cj * x[j], 0);           // true cost c^T x
   const totals = Object.fromEntries(model.keys.map((k, i) => [k, model.A[i].reduce((s, v, j) => s + v * x[j], 0)]));
   const item = (f, j, share = 1) => {
     const g = x[j] * 100 * share;
@@ -298,7 +315,107 @@ export function optimizeDiet(targets, prefs = {}) {
     return { meal, items, kcal: items.reduce((s, r) => s + r.kcal, 0), protein: items.reduce((s, r) => s + r.protein, 0),
       cost: items.reduce((s, r) => s + r.cost, 0) };
   });
-  return { status: "optimal", diet: model.diet.name, costPerDay: sol.objective, costPerWeek: sol.objective * 7,
+  return { status: "optimal", diet: model.diet.name, costPerDay: cost, costPerWeek: cost * 7, objective: sol.objective,
     plan, meals, totals, pivots: sol.pivots,
-    model: { foods: model.foods.map((f) => f.id), A: model.A, c: model.c, x, constraints: model.labels.length } };
+    model: { foods: model.foods.map((f) => f.id), A: model.A, c: model.c, cObj: model.cObj, x, constraints: model.labels.length,
+             labels: model.labels } };
+}
+
+/** How preferences and variety enter the objective (diagonal of D). Team design choices, not nutrition rules. */
+export const OPTION_RULES = {
+  like: 0.6,          // a liked food is treated as 40% cheaper when choosing (its real price is still what you pay)
+  dislike: 1.75,      // a food you'd rather avoid is treated as 75% more expensive (it can still appear if it is needed)
+  repeat: 1.5,        // variety menus: each earlier option that used a food (>= 15 g) multiplies its cost by 1.5
+  minGrams: 15,
+};
+
+/**
+ * Several plans for the same person and diet, each the solution of one LP with a different objective D c:
+ *   1. "Lowest cost": D = I (the true minimum).
+ *   2. "Your picks" (only when the person liked or disliked foods): D from their likes/dislikes.
+ *   3+. "Something different" / "Mix it up": D also penalizes foods that earlier options already used.
+ * Every option meets every rule; only the objective changes.
+ */
+export function planOptions(targets, prefs = {}, { count = 3 } = {}) {
+  const pref = {};
+  for (const id of prefs.likes || []) pref[id] = OPTION_RULES.like;
+  for (const id of prefs.dislikes || []) pref[id] = OPTION_RULES.dislike;
+  const hasPrefs = Object.keys(pref).length > 0;
+  const base = { ...prefs, weights: {} };
+  const cheapest = optimizeDiet(targets, base);
+  if (cheapest.status !== "optimal") return { status: cheapest.status, reasons: cheapest.reasons, diet: cheapest.diet, options: [] };
+  const options = [{ key: "cheapest", title: "Lowest cost", blurb: "The cheapest day that meets every target.", weights: {}, result: cheapest }];
+  if (hasPrefs) {
+    // Liked foods: at least one serving each (a lower bound l_j on x_j) when the rules allow it, plus the D weights.
+    const diet = getDiet(prefs.diet);
+    const liked = (prefs.likes || []).filter((id) => { const f = FOODS.find((x) => x.id === id); return f && isAllowed(f, diet, prefs.exclude || [], prefs); });
+    const must = { ...(prefs.mustInclude || {}) };
+    for (const id of liked) must[id] = Math.max(must[id] || 0, Math.min(1, FOODS.find((x) => x.id === id).max_servings));
+    let r = liked.length ? optimizeDiet(targets, { ...prefs, weights: pref, mustInclude: must }) : { status: "skip" };
+    let blurb = "Includes a serving of each food you like, and leans away from the ones you'd rather skip.", mustInclude = must;
+    if (r.status !== "optimal") {
+      r = optimizeDiet(targets, { ...prefs, weights: pref }); mustInclude = prefs.mustInclude;
+      blurb = "Leans toward the foods you like (not all of them fit your targets at once).";
+    }
+    if (r.status === "optimal") options.push({ key: "picks", title: "Your picks", blurb, weights: pref, mustInclude, result: r });
+  }
+  const variety = [["different", "Something different", "Swaps out the main foods of the plans above."],
+                   ["mix", "Mix it up", "A third menu, so a week can rotate between plans."],
+                   ["fourth", "One more", "Another rotation menu."]];
+  const uses = {};
+  for (let v = 0; options.length < count + (hasPrefs ? 1 : 0) && v < variety.length; v++) {
+    for (const o of options.slice(-1)) for (const it of o.result.plan) if (it.grams >= OPTION_RULES.minGrams) uses[it.id] = (uses[it.id] || 0) + 1;
+    const w = { ...(hasPrefs ? pref : {}) };
+    for (const [id, k] of Object.entries(uses)) w[id] = (w[id] ?? 1) * OPTION_RULES.repeat ** k;
+    const r = optimizeDiet(targets, { ...prefs, weights: w });
+    if (r.status !== "optimal") break;
+    const [key, title, blurb] = variety[v];
+    const same = options.some((o) => compareOptions([o.result, r]).similarity[0][1] > 0.999);
+    options.push({ key, title, blurb, weights: w, result: r, duplicate: same });
+  }
+  const kept = options.filter((o, k) => k === 0 || !(o.duplicate || (o.key === "picks" && compareOptions([cheapest, o.result]).similarity[0][1] > 0.999)));
+  kept.forEach((o, k) => { o.letter = "ABCDE"[k]; o.extraPerDay = o.result.costPerDay - cheapest.costPerDay; delete o.duplicate; });
+  return { status: "optimal", diet: cheapest.diet, options: kept, ...compareOptions(kept.map((o) => o.result)) };
+}
+
+/** Options side by side. X = grams matrix (foods x options); A X = nutrients x options; S = cosine-similarity Gram matrix of
+ *  the calorie vectors (e o x): S_ab = 1 means two menus get their calories from the same foods in the same proportions. */
+export function compareOptions(results) {
+  const grams = results.map((r) => Object.fromEntries(r.model.foods.map((id, j) => [id, r.model.x[j] * 100])));  // full x, not the display list
+  const ids = FOODS.map((f) => f.id).filter((id) => grams.some((g) => g[id] > 0));
+  const byId = Object.fromEntries(FOODS.map((f) => [f.id, f]));
+  const X = ids.map((id) => grams.map((g) => g[id] ?? 0));                                              // grams, foods x options
+  const AX = NUTRIENTS.map((n) => results.map((_, k) => ids.reduce((s, id, j) => s + byId[id].per100g[n.key] * X[j][k] / 100, 0)));
+  const K = ids.map((id, j) => X[j].map((g) => byId[id].per100g.kcal * g / 100));                    // calorie vectors
+  const dot = (a, b) => K.reduce((s, row) => s + row[a] * row[b], 0);
+  const S = results.map((_, a) => results.map((_, b) => dot(a, b) / Math.sqrt(dot(a, a) * dot(b, b) || 1)));
+  return { foods: ids, X, AX, similarity: S };
+}
+
+/** Cheapest plan for every diet (same person, same allergy/food choices): which diets fit, and what each costs. */
+export function compareDiets(targets, prefs = {}) {
+  return DIETS.map((d) => {
+    const r = optimizeDiet(targets, { ...prefs, diet: d.name, weights: {} });
+    return { diet: d.name, desc: d.desc, status: r.status, costPerDay: r.costPerDay ?? null, protein: r.totals?.protein ?? null,
+      foods: r.plan?.length ?? 0, reasons: r.reasons || [] };
+  });
+}
+
+/** A week: d_k = days on option k. Weekly grams g = X d (a matrix-vector product), then whole packages to buy.
+ *  Foods priced per pound are bought by weight; others round up to whole packages, so checkout >= LP cost. */
+export function weekPlan(results, days, { priceSource = "walmart" } = {}) {
+  const { foods, X } = compareOptions(results);
+  const byId = Object.fromEntries(FOODS.map((f) => [f.id, f]));
+  const lines = foods.map((id, j) => {
+    const f = byId[id];
+    const grams = X[j].reduce((s, g, k) => s + g * (days[k] || 0), 0);                         // (X d)_j
+    const edible = f.package_g * f.edible_yield;
+    const byWeight = /per lb/i.test(f.product);
+    const pkgPrice = priceSource === "bls" && f.bls_cost_per_100g != null ? f.bls_cost_per_100g * edible / 100 : f.price;
+    const packages = byWeight ? grams / edible : Math.ceil(grams / edible - 1e-9);
+    return { id, name: f.name, group: f.group, product: f.product, grams, byWeight, packages, pounds: grams / f.edible_yield / 453.592,
+      checkout: packages * pkgPrice, eaten: grams / edible * pkgPrice, source: f.price_source };
+  }).filter((l) => l.grams > 0).sort((a, b) => a.group.localeCompare(b.group) || b.checkout - a.checkout);
+  const eaten = lines.reduce((s, l) => s + l.eaten, 0), checkout = lines.reduce((s, l) => s + l.checkout, 0);
+  return { lines, eaten, checkout, leftover: checkout - eaten, days };
 }

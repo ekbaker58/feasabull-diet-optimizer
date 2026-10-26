@@ -1,6 +1,6 @@
 {
  "version": 2,
- "price_source": "Walmart.com / business.walmart.com, observed October 2026 (regular, non-Rollback prices); BLS Average Price Data, U.S. city average, September 2026, as a reference column",
+ "price_source": "Core 71 foods: Walmart.com / business.walmart.com, observed October 2026 (regular, non-Rollback prices). Added foods: BLS Average Price Data (U.S. city average, Sep 2026) or USDA ERS Fruit and Vegetable Prices (2023) scaled to Sep 2026 with the BLS CPI. BLS U.S. averages are also kept as a reference column.",
  "nutrient_source": "USDA National Nutrient Database for Standard Reference, Release 28 (SR28)",
  "nutrients": [
   {
@@ -57,6 +57,11 @@
    "key": "vitc",
    "label": "Vitamin C",
    "unit": "mg"
+  },
+  {
+   "key": "satfat",
+   "label": "Saturated fat",
+   "unit": "g"
   }
  ],
  "attrs": [
@@ -87,8 +92,66 @@
   {
    "key": "gluten",
    "label": "Gluten"
+  },
+  {
+   "key": "shellfish",
+   "label": "Shellfish"
+  },
+  {
+   "key": "peanut",
+   "label": "Peanuts"
+  },
+  {
+   "key": "treenut",
+   "label": "Tree nuts"
+  },
+  {
+   "key": "soy",
+   "label": "Soy"
   }
  ],
+ "allergens": [
+  "dairy",
+  "egg",
+  "gluten",
+  "fish",
+  "shellfish",
+  "peanut",
+  "treenut",
+  "soy"
+ ],
+ "cpi": {
+  "fresh_fruit": {
+   "series": "CUUR0000SEFK",
+   "label": "fresh fruits",
+   "base_2023": 409.07849999999996,
+   "sep_2026": 433.87
+  },
+  "fresh_veg": {
+   "series": "CUUR0000SEFL",
+   "label": "fresh vegetables",
+   "base_2023": 377.413,
+   "sep_2026": 400.183
+  },
+  "canned": {
+   "series": "CUUR0000SEFM01",
+   "label": "canned fruits and vegetables",
+   "base_2023": 213.03750000000002,
+   "sep_2026": 235.069
+  },
+  "frozen": {
+   "series": "CUUR0000SEFM02",
+   "label": "frozen fruits and vegetables",
+   "base_2023": 187.7295,
+   "sep_2026": 191.463
+  },
+  "dried": {
+   "series": "CUUR0000SEFM03",
+   "label": "other processed fruits and vegetables including dried",
+   "base_2023": 187.987,
+   "sep_2026": 202.923
+  }
+ },
  "meals": [
   "Breakfast",
   "Lunch",
@@ -251,6 +314,44 @@
    "forbid": [
     "pork"
    ]
+  },
+  {
+   "name": "Dairy-Free",
+   "desc": "No milk, cheese, yogurt, butter or ice cream (soy milk allowed)",
+   "protein": [
+    0.1,
+    0.35
+   ],
+   "carb": [
+    0.45,
+    0.65
+   ],
+   "fat": [
+    0.2,
+    0.35
+   ],
+   "forbid": [
+    "dairy"
+   ]
+  },
+  {
+   "name": "DASH-Style",
+   "desc": "Heart-healthy DASH goals: saturated fat <= 6% of calories, sodium <= 1,500 mg, protein ~18%, carbs ~55%, fat ~27%",
+   "protein": [
+    0.15,
+    0.21
+   ],
+   "carb": [
+    0.52,
+    0.58
+   ],
+   "fat": [
+    0.24,
+    0.3
+   ],
+   "forbid": [],
+   "sodium_max": 1500,
+   "satfat_max": 0.06
   }
  ],
  "settings": {
@@ -310,7 +411,18 @@
     "lentils",
     "black_beans",
     "chickpeas",
-    "pinto_beans"
+    "pinto_beans",
+    "black_beans_dry",
+    "kidney_beans_dry",
+    "navy_beans_dry",
+    "gn_beans_dry",
+    "blackeye_dry",
+    "lima_dry",
+    "kidney_beans_can",
+    "navy_beans_can",
+    "gn_beans_can",
+    "blackeye_can",
+    "pinto_beans_can"
    ]
   },
   {
@@ -407,6 +519,8 @@
    "flags": [
     "poultry"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
@@ -425,7 +539,8 @@
     "iron": 0.37,
     "potassium": 334.0,
     "sodium": 45.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.563
    }
   },
   {
@@ -455,6 +570,8 @@
    "flags": [
     "poultry"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Chicken, broilers or fryers, drumstick, meat and skin, raw",
@@ -473,7 +590,8 @@
     "iron": 0.71,
     "potassium": 211.0,
     "sodium": 106.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 2.459
    }
   },
   {
@@ -500,6 +618,8 @@
    "flags": [
     "poultry"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Chicken, broilers or fryers, dark meat, thigh, meat only, raw",
@@ -518,7 +638,8 @@
     "iron": 0.81,
     "potassium": 242.0,
     "sodium": 95.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 1.097
    }
   },
   {
@@ -545,6 +666,8 @@
    "flags": [
     "poultry"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Turkey breast, sliced, prepackaged",
@@ -563,7 +686,8 @@
     "iron": 0.34,
     "potassium": 401.0,
     "sodium": 922.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.318
    }
   },
   {
@@ -590,6 +714,8 @@
    "flags": [
     "poultry"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Ground turkey, 93% lean, 7% fat, raw",
@@ -608,7 +734,59 @@
     "iron": 1.17,
     "potassium": 213.0,
     "sodium": 69.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 2.17
+   }
+  },
+  {
+   "id": "whole_chicken",
+   "name": "Whole chicken",
+   "group": "Proteins",
+   "type": "Poultry",
+   "product": "Chicken, fresh, whole, per lb (BLS U.S. average)",
+   "price": 2.064,
+   "package_g": 453.6,
+   "price_note": "BLS APU0000706111 \"Chicken, fresh, whole, per lb\", U.S. city average, Sep 2026; edible yield 68% (USDA refuse 32% bone)",
+   "bls": [
+    2.064,
+    453.592
+   ],
+   "edible_yield": 0.68,
+   "ndb": "05006",
+   "serving_g": 113,
+   "serving_desc": "4 oz raw meat & skin",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [
+    "poultry"
+   ],
+   "price_source": "bls",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "meat_fish",
+   "usda_desc": "Chicken, broilers or fryers, meat and skin, raw",
+   "usda_refuse_pct": 32.0,
+   "usda_refuse_desc": "Bone",
+   "cost_per_100g": 0.669157,
+   "bls_cost_per_100g": 0.669168,
+   "per100g": {
+    "kcal": 215.0,
+    "protein": 18.6,
+    "carb": 0.0,
+    "fat": 15.06,
+    "fiber": 0.0,
+    "sugar": 0.0,
+    "calcium": 11.0,
+    "iron": 0.9,
+    "potassium": 189.0,
+    "sodium": 70.0,
+    "vitc": 1.6,
+    "satfat": 4.31
    }
   },
   {
@@ -639,6 +817,8 @@
     "meat",
     "pork"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Pork, cured, bacon, unprepared",
@@ -657,7 +837,59 @@
     "iron": 0.41,
     "potassium": 198.0,
     "sodium": 662.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 13.296
+   }
+  },
+  {
+   "id": "stew_beef",
+   "name": "Beef for stew (boneless)",
+   "group": "Proteins",
+   "type": "Red Meat & Pork",
+   "product": "Beef for stew, boneless, per lb (BLS U.S. average)",
+   "price": 8.533,
+   "package_g": 453.6,
+   "price_note": "BLS APU0000703432 \"Beef for stew, boneless, per lb\", U.S. city average, Sep 2026",
+   "bls": [
+    8.533,
+    453.592
+   ],
+   "edible_yield": 1.0,
+   "ndb": "23093",
+   "serving_g": 113,
+   "serving_desc": "4 oz raw",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0,
+    1,
+    0
+   ],
+   "flags": [
+    "meat"
+   ],
+   "price_source": "bls",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "meat_fish",
+   "usda_desc": "Beef, chuck for stew, separable lean and fat, all grades, raw",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 1.881173,
+   "bls_cost_per_100g": 1.881206,
+   "per100g": {
+    "kcal": 128.0,
+    "protein": 21.75,
+    "carb": 0.16,
+    "fat": 4.48,
+    "fiber": 0.0,
+    "sugar": 0.0,
+    "calcium": 13.0,
+    "iron": 2.12,
+    "potassium": 367.0,
+    "sodium": 80.0,
+    "vitc": 0.0,
+    "satfat": 1.86
    }
   },
   {
@@ -687,6 +919,8 @@
    "flags": [
     "meat"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Beef, ground, 80% lean meat / 20% fat, raw",
@@ -705,7 +939,8 @@
     "iron": 1.94,
     "potassium": 270.0,
     "sodium": 66.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 7.581
    }
   },
   {
@@ -735,6 +970,8 @@
    "flags": [
     "meat"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Beef, ground, 93% lean meat / 7% fat, raw",
@@ -753,7 +990,8 @@
     "iron": 2.33,
     "potassium": 336.0,
     "sodium": 66.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 2.878
    }
   },
   {
@@ -784,6 +1022,8 @@
     "meat",
     "pork"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Ham, sliced, regular (approximately 11% fat)",
@@ -802,7 +1042,8 @@
     "iron": 1.02,
     "potassium": 287.0,
     "sodium": 1143.0,
-    "vitc": 4.0
+    "vitc": 4.0,
+    "satfat": 2.936
    }
   },
   {
@@ -833,6 +1074,8 @@
     "meat",
     "pork"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Pork, fresh, loin, center loin (chops), boneless, separable lean and fat, raw",
@@ -851,7 +1094,59 @@
     "iron": 0.48,
     "potassium": 345.0,
     "sodium": 82.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 4.413
+   }
+  },
+  {
+   "id": "round_steak",
+   "name": "Round steak (boneless)",
+   "group": "Proteins",
+   "type": "Red Meat & Pork",
+   "product": "Steak, round, USDA Choice, boneless, per lb (BLS U.S. average)",
+   "price": 9.838,
+   "package_g": 453.6,
+   "price_note": "BLS APU0000703511 \"Steak, round, USDA Choice, boneless, per lb\", U.S. city average, Sep 2026; USDA top round steak, Choice, as the nutrient match",
+   "bls": [
+    9.838,
+    453.592
+   ],
+   "edible_yield": 1.0,
+   "ndb": "13894",
+   "serving_g": 113,
+   "serving_desc": "4 oz raw",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0,
+    1,
+    0
+   ],
+   "flags": [
+    "meat"
+   ],
+   "price_source": "bls",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "meat_fish",
+   "usda_desc": "Beef, round, top round, steak, separable lean and fat, trimmed to 1/8\" fat, choice, raw",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 2.168871,
+   "bls_cost_per_100g": 2.16891,
+   "per100g": {
+    "kcal": 168.0,
+    "protein": 21.94,
+    "carb": 0.0,
+    "fat": 8.19,
+    "fiber": 0.0,
+    "sugar": 0.0,
+    "calcium": 17.0,
+    "iron": 1.97,
+    "potassium": 341.0,
+    "sodium": 57.0,
+    "vitc": 0.0,
+    "satfat": 3.224
    }
   },
   {
@@ -881,6 +1176,8 @@
    "flags": [
     "meat"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Beef, top sirloin, steak, separable lean and fat, trimmed to 1/8\" fat, choice, raw",
@@ -899,7 +1196,8 @@
     "iron": 1.46,
     "potassium": 309.0,
     "sodium": 51.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 5.763
    }
   },
   {
@@ -926,6 +1224,8 @@
    "flags": [
     "fish"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Fish, tuna, light, canned in water, drained solids",
@@ -944,7 +1244,8 @@
     "iron": 1.63,
     "potassium": 179.0,
     "sodium": 247.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.211
    }
   },
   {
@@ -971,6 +1272,8 @@
    "flags": [
     "fish"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Fish, salmon, Atlantic, farmed, raw",
@@ -989,7 +1292,8 @@
     "iron": 0.34,
     "potassium": 363.0,
     "sodium": 59.0,
-    "vitc": 3.9
+    "vitc": 3.9,
+    "satfat": 3.05
    }
   },
   {
@@ -1014,8 +1318,11 @@
     0
    ],
    "flags": [
-    "fish"
+    "fish",
+    "shellfish"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Crustaceans, shrimp, mixed species, raw (may have been previously frozen)",
@@ -1034,7 +1341,8 @@
     "iron": 0.21,
     "potassium": 113.0,
     "sodium": 566.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.261
    }
   },
   {
@@ -1061,6 +1369,8 @@
    "flags": [
     "fish"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "meat_fish",
    "usda_desc": "Fish, tilapia, raw",
@@ -1079,7 +1389,8 @@
     "iron": 0.56,
     "potassium": 302.0,
     "sodium": 52.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.585
    }
   },
   {
@@ -1109,6 +1420,8 @@
    "flags": [
     "egg"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": null,
    "usda_desc": "Egg, whole, raw, fresh",
@@ -1127,7 +1440,8 @@
     "iron": 1.75,
     "potassium": 138.0,
     "sodium": 142.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 3.126
    }
   },
   {
@@ -1152,6 +1466,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "legumes",
    "usda_desc": "Beans, black, mature seeds, canned, low sodium",
@@ -1170,7 +1486,146 @@
     "iron": 1.9,
     "potassium": 308.0,
     "sodium": 138.0,
-    "vitc": 2.7
+    "vitc": 2.7,
+    "satfat": 0.075
+   }
+  },
+  {
+   "id": "black_beans_dry",
+   "name": "Black beans (dry)",
+   "group": "Proteins",
+   "type": "Plant Proteins",
+   "product": "Dried, per lb (USDA ERS U.S. average)",
+   "price": 1.79,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.6585/lb x BLS CPI other processed fruits and vegetables including dried (CUUR0000SEFM03) Sep 2026 / 2023 avg = 1.0795",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "16014",
+   "serving_g": 48,
+   "serving_desc": "1/4 cup dry (~3/4 cup cooked)",
+   "max_servings": 3,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "legumes",
+   "usda_desc": "Beans, black, mature seeds, raw",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.394621,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 341.0,
+    "protein": 21.6,
+    "carb": 62.36,
+    "fat": 1.42,
+    "fiber": 15.5,
+    "sugar": 2.12,
+    "calcium": 123.0,
+    "iron": 5.02,
+    "potassium": 1483.0,
+    "sodium": 5.0,
+    "vitc": 0.0,
+    "satfat": 0.366
+   }
+  },
+  {
+   "id": "blackeye_can",
+   "name": "Black-eyed peas (canned)",
+   "group": "Proteins",
+   "type": "Plant Proteins",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.568,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.4209/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034; nutrients for solids + liquid",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "16064",
+   "serving_g": 120,
+   "serving_desc": "1/2 cup",
+   "max_servings": 3,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "legumes",
+   "usda_desc": "Cowpeas, common (blackeyes, crowder, southern), mature seeds, canned, plain",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.345679,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 77.0,
+    "protein": 4.74,
+    "carb": 13.63,
+    "fat": 0.55,
+    "fiber": 3.3,
+    "sugar": 0.0,
+    "calcium": 20.0,
+    "iron": 0.97,
+    "potassium": 172.0,
+    "sodium": 293.0,
+    "vitc": 2.7,
+    "satfat": 0.144
+   }
+  },
+  {
+   "id": "blackeye_dry",
+   "name": "Black-eyed peas (dry)",
+   "group": "Proteins",
+   "type": "Plant Proteins",
+   "product": "Dried, per lb (USDA ERS U.S. average)",
+   "price": 2.294,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.1255/lb x BLS CPI other processed fruits and vegetables including dried (CUUR0000SEFM03) Sep 2026 / 2023 avg = 1.0795",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "16062",
+   "serving_g": 48,
+   "serving_desc": "1/4 cup dry (~3/4 cup cooked)",
+   "max_servings": 3,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "legumes",
+   "usda_desc": "Cowpeas, common (blackeyes, crowder, southern), mature seeds, raw",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.505732,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 336.0,
+    "protein": 23.52,
+    "carb": 60.03,
+    "fat": 1.26,
+    "fiber": 10.6,
+    "sugar": 6.9,
+    "calcium": 110.0,
+    "iron": 8.27,
+    "potassium": 1112.0,
+    "sodium": 16.0,
+    "vitc": 1.5,
+    "satfat": 0.331
    }
   },
   {
@@ -1195,6 +1650,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "legumes",
    "usda_desc": "Chickpeas (garbanzo beans, bengal gram), mature seeds, canned, solids and liquids",
@@ -1213,7 +1670,192 @@
     "iron": 1.23,
     "potassium": 144.0,
     "sodium": 278.0,
-    "vitc": 0.1
+    "vitc": 0.1,
+    "satfat": 0.204
+   }
+  },
+  {
+   "id": "gn_beans_can",
+   "name": "Great northern beans (canned)",
+   "group": "Proteins",
+   "type": "Plant Proteins",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.288,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.1673/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034; nutrients for solids + liquid",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "16026",
+   "serving_g": 120,
+   "serving_desc": "1/2 cup",
+   "max_servings": 3,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "legumes",
+   "usda_desc": "Beans, great northern, mature seeds, canned",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.283951,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 114.0,
+    "protein": 7.37,
+    "carb": 21.02,
+    "fat": 0.39,
+    "fiber": 4.9,
+    "sugar": 1.41,
+    "calcium": 53.0,
+    "iron": 1.57,
+    "potassium": 351.0,
+    "sodium": 370.0,
+    "vitc": 1.3,
+    "satfat": 0.12
+   }
+  },
+  {
+   "id": "gn_beans_dry",
+   "name": "Great northern beans (dry)",
+   "group": "Proteins",
+   "type": "Plant Proteins",
+   "product": "Dried, per lb (USDA ERS U.S. average)",
+   "price": 2.022,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.8728/lb x BLS CPI other processed fruits and vegetables including dried (CUUR0000SEFM03) Sep 2026 / 2023 avg = 1.0795",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "16024",
+   "serving_g": 48,
+   "serving_desc": "1/4 cup dry (~3/4 cup cooked)",
+   "max_servings": 3,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "legumes",
+   "usda_desc": "Beans, great northern, mature seeds, raw",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.445767,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 339.0,
+    "protein": 21.86,
+    "carb": 62.37,
+    "fat": 1.14,
+    "fiber": 20.2,
+    "sugar": 2.26,
+    "calcium": 175.0,
+    "iron": 5.47,
+    "potassium": 1387.0,
+    "sodium": 14.0,
+    "vitc": 5.3,
+    "satfat": 0.356
+   }
+  },
+  {
+   "id": "kidney_beans_can",
+   "name": "Kidney beans (canned)",
+   "group": "Proteins",
+   "type": "Plant Proteins",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.324,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.1999/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034; nutrients for solids + liquid",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "16034",
+   "serving_g": 120,
+   "serving_desc": "1/2 cup",
+   "max_servings": 3,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "legumes",
+   "usda_desc": "Beans, kidney, red, mature seeds, canned, solids and liquids",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.291887,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 81.0,
+    "protein": 5.22,
+    "carb": 14.83,
+    "fat": 0.36,
+    "fiber": 4.3,
+    "sugar": 1.85,
+    "calcium": 29.0,
+    "iron": 1.25,
+    "potassium": 260.0,
+    "sodium": 256.0,
+    "vitc": 0.8,
+    "satfat": 0.125
+   }
+  },
+  {
+   "id": "kidney_beans_dry",
+   "name": "Kidney beans (dry)",
+   "group": "Proteins",
+   "type": "Plant Proteins",
+   "product": "Dried, per lb (USDA ERS U.S. average)",
+   "price": 2.155,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.9963/lb x BLS CPI other processed fruits and vegetables including dried (CUUR0000SEFM03) Sep 2026 / 2023 avg = 1.0795",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "16027",
+   "serving_g": 48,
+   "serving_desc": "1/4 cup dry (~3/4 cup cooked)",
+   "max_servings": 3,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "legumes",
+   "usda_desc": "Beans, kidney, all types, mature seeds, raw",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.475088,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 333.0,
+    "protein": 23.58,
+    "carb": 60.01,
+    "fat": 0.83,
+    "fiber": 24.9,
+    "sugar": 2.23,
+    "calcium": 143.0,
+    "iron": 8.2,
+    "potassium": 1406.0,
+    "sodium": 24.0,
+    "vitc": 4.5,
+    "satfat": 0.12
    }
   },
   {
@@ -1238,6 +1880,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "legumes",
    "usda_desc": "Lentils, raw",
@@ -1256,7 +1900,146 @@
     "iron": 6.51,
     "potassium": 677.0,
     "sodium": 6.0,
-    "vitc": 4.5
+    "vitc": 4.5,
+    "satfat": 0.154
+   }
+  },
+  {
+   "id": "lima_dry",
+   "name": "Lima beans (dry)",
+   "group": "Proteins",
+   "type": "Plant Proteins",
+   "product": "Dried, per lb (USDA ERS U.S. average)",
+   "price": 2.865,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.6543/lb x BLS CPI other processed fruits and vegetables including dried (CUUR0000SEFM03) Sep 2026 / 2023 avg = 1.0795",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "16071",
+   "serving_g": 48,
+   "serving_desc": "1/4 cup dry (~3/4 cup cooked)",
+   "max_servings": 3,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "legumes",
+   "usda_desc": "Lima beans, large, mature seeds, raw",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.631614,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 338.0,
+    "protein": 21.46,
+    "carb": 63.38,
+    "fat": 0.69,
+    "fiber": 19.0,
+    "sugar": 8.5,
+    "calcium": 81.0,
+    "iron": 7.51,
+    "potassium": 1724.0,
+    "sodium": 18.0,
+    "vitc": 0.0,
+    "satfat": 0.161
+   }
+  },
+  {
+   "id": "navy_beans_can",
+   "name": "Navy beans (canned)",
+   "group": "Proteins",
+   "type": "Plant Proteins",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.362,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.2345/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034; nutrients for solids + liquid",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "16039",
+   "serving_g": 120,
+   "serving_desc": "1/2 cup",
+   "max_servings": 3,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "legumes",
+   "usda_desc": "Beans, navy, mature seeds, canned",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.300265,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 113.0,
+    "protein": 7.53,
+    "carb": 20.45,
+    "fat": 0.43,
+    "fiber": 5.1,
+    "sugar": 0.28,
+    "calcium": 47.0,
+    "iron": 1.85,
+    "potassium": 288.0,
+    "sodium": 336.0,
+    "vitc": 0.7,
+    "satfat": 0.112
+   }
+  },
+  {
+   "id": "navy_beans_dry",
+   "name": "Navy beans (dry)",
+   "group": "Proteins",
+   "type": "Plant Proteins",
+   "product": "Dried, per lb (USDA ERS U.S. average)",
+   "price": 1.841,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.7058/lb x BLS CPI other processed fruits and vegetables including dried (CUUR0000SEFM03) Sep 2026 / 2023 avg = 1.0795; USDA lists no vitamin C value; counted as 0",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "16037",
+   "serving_g": 48,
+   "serving_desc": "1/4 cup dry (~3/4 cup cooked)",
+   "max_servings": 3,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "legumes",
+   "usda_desc": "Beans, navy, mature seeds, raw",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.405864,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 337.0,
+    "protein": 22.33,
+    "carb": 60.75,
+    "fat": 1.5,
+    "fiber": 15.3,
+    "sugar": 3.88,
+    "calcium": 147.0,
+    "iron": 5.49,
+    "potassium": 1185.0,
+    "sodium": 5.0,
+    "vitc": 0.0,
+    "satfat": 0.17
    }
   },
   {
@@ -1280,7 +2063,11 @@
     0,
     0.5
    ],
-   "flags": [],
+   "flags": [
+    "peanut"
+   ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": null,
    "usda_desc": "Peanut butter, smooth style, with salt",
@@ -1299,7 +2086,54 @@
     "iron": 1.74,
     "potassium": 558.0,
     "sodium": 426.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 10.325
+   }
+  },
+  {
+   "id": "pinto_beans_can",
+   "name": "Pinto beans (canned)",
+   "group": "Proteins",
+   "type": "Plant Proteins",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.337,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.2121/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034; nutrients for solids + liquid",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "16044",
+   "serving_g": 120,
+   "serving_desc": "1/2 cup",
+   "max_servings": 3,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": "legumes",
+   "usda_desc": "Beans, pinto, mature seeds, canned, solids and liquids",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.294753,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 82.0,
+    "protein": 4.6,
+    "carb": 15.18,
+    "fat": 0.56,
+    "fiber": 4.6,
+    "sugar": 1.02,
+    "calcium": 47.0,
+    "iron": 1.47,
+    "potassium": 276.0,
+    "sodium": 268.0,
+    "vitc": 0.7,
+    "satfat": 0.123
    }
   },
   {
@@ -1327,6 +2161,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "legumes",
    "usda_desc": "Beans, pinto, mature seeds, raw",
@@ -1345,7 +2181,8 @@
     "iron": 5.07,
     "potassium": 1393.0,
     "sodium": 12.0,
-    "vitc": 6.3
+    "vitc": 6.3,
+    "satfat": 0.235
    }
   },
   {
@@ -1369,7 +2206,11 @@
     0.5,
     0
    ],
-   "flags": [],
+   "flags": [
+    "soy"
+   ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": null,
    "usda_desc": "Vitasoy USA, Organic Nasoya Extra Firm Tofu",
@@ -1388,7 +2229,8 @@
     "iron": 1.6,
     "potassium": 0.0,
     "sodium": 4.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.7
    }
   },
   {
@@ -1415,6 +2257,8 @@
    "flags": [
     "dairy"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": null,
    "usda_desc": "Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D",
@@ -1433,7 +2277,8 @@
     "iron": 0.02,
     "potassium": 140.0,
     "sodium": 47.0,
-    "vitc": 0.2
+    "vitc": 0.2,
+    "satfat": 1.257
    }
   },
   {
@@ -1460,6 +2305,8 @@
    "flags": [
     "dairy"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": null,
    "usda_desc": "Yogurt, Greek, plain, nonfat",
@@ -1478,7 +2325,8 @@
     "iron": 0.07,
     "potassium": 141.0,
     "sodium": 36.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.117
    }
   },
   {
@@ -1502,7 +2350,11 @@
     0,
     0.5
    ],
-   "flags": [],
+   "flags": [
+    "soy"
+   ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": null,
    "usda_desc": "Soymilk, original and vanilla, with added calcium, vitamins A and D",
@@ -1521,7 +2373,8 @@
     "iron": 0.42,
     "potassium": 122.0,
     "sodium": 47.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.205
    }
   },
   {
@@ -1551,6 +2404,8 @@
    "flags": [
     "dairy"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": null,
    "usda_desc": "Milk, whole, 3.25% milkfat, with added vitamin D",
@@ -1569,7 +2424,8 @@
     "iron": 0.03,
     "potassium": 132.0,
     "sodium": 43.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 1.865
    }
   },
   {
@@ -1599,6 +2455,8 @@
    "flags": [
     "dairy"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "cheese",
    "usda_desc": "Cheese, pasteurized process, American, fortified with vitamin D",
@@ -1617,7 +2475,8 @@
     "iron": 0.63,
     "potassium": 132.0,
     "sodium": 1671.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 18.057
    }
   },
   {
@@ -1647,6 +2506,8 @@
    "flags": [
     "dairy"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "cheese",
    "usda_desc": "Cheese, cheddar",
@@ -1665,7 +2526,8 @@
     "iron": 0.14,
     "potassium": 76.0,
     "sodium": 653.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 18.867
    }
   },
   {
@@ -1692,6 +2554,8 @@
    "flags": [
     "dairy"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "cheese",
    "usda_desc": "Cheese, cottage, lowfat, 2% milkfat",
@@ -1710,7 +2574,8 @@
     "iron": 0.13,
     "potassium": 125.0,
     "sodium": 308.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 1.235
    }
   },
   {
@@ -1737,6 +2602,8 @@
    "flags": [
     "dairy"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "cheese",
    "usda_desc": "Cheese, mozzarella, low moisture, part-skim",
@@ -1755,7 +2622,8 @@
     "iron": 0.22,
     "potassium": 188.0,
     "sodium": 666.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 11.295
    }
   },
   {
@@ -1782,6 +2650,8 @@
    "flags": [
     "gluten"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "grains",
    "usda_desc": "Bagels, plain, enriched, with calcium propionate (includes onion, poppy, sesame)",
@@ -1800,7 +2670,8 @@
     "iron": 3.57,
     "potassium": 107.0,
     "sodium": 422.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.36
    }
   },
   {
@@ -1825,6 +2696,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "grains",
    "usda_desc": "Rice, brown, long-grain, raw",
@@ -1843,7 +2716,8 @@
     "iron": 1.29,
     "potassium": 250.0,
     "sodium": 5.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.591
    }
   },
   {
@@ -1868,6 +2742,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "grains",
    "usda_desc": "Cereals ready-to-eat, GENERAL MILLS, CHEERIOS",
@@ -1886,7 +2762,8 @@
     "iron": 33.17,
     "potassium": 641.0,
     "sodium": 497.0,
-    "vitc": 21.6
+    "vitc": 21.6,
+    "satfat": 1.5
    }
   },
   {
@@ -1911,6 +2788,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "grains",
    "usda_desc": "Tortillas, ready-to-bake or -fry, corn",
@@ -1929,7 +2808,8 @@
     "iron": 1.23,
     "potassium": 186.0,
     "sodium": 45.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.453
    }
   },
   {
@@ -1956,6 +2836,8 @@
    "flags": [
     "gluten"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "grains",
    "usda_desc": "Tortillas, ready-to-bake or -fry, flour, shelf stable",
@@ -1974,7 +2856,8 @@
     "iron": 3.32,
     "potassium": 133.0,
     "sodium": 742.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 1.225
    }
   },
   {
@@ -1999,6 +2882,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "grains",
    "usda_desc": "Quinoa, uncooked",
@@ -2017,7 +2902,8 @@
     "iron": 4.57,
     "potassium": 563.0,
     "sodium": 5.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.706
    }
   },
   {
@@ -2044,6 +2930,8 @@
    "flags": [
     "gluten"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "grains",
    "usda_desc": "Cereals, oats, regular and quick, not fortified, dry",
@@ -2062,7 +2950,8 @@
     "iron": 4.25,
     "potassium": 362.0,
     "sodium": 6.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 1.11
    }
   },
   {
@@ -2092,6 +2981,8 @@
    "flags": [
     "gluten"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "grains",
    "usda_desc": "Pasta, dry, enriched",
@@ -2110,7 +3001,8 @@
     "iron": 3.3,
     "potassium": 223.0,
     "sodium": 6.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.277
    }
   },
   {
@@ -2140,6 +3032,8 @@
    "flags": [
     "gluten"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "grains",
    "usda_desc": "Bread, white, commercially prepared (includes soft bread crumbs)",
@@ -2158,7 +3052,8 @@
     "iron": 3.61,
     "potassium": 126.0,
     "sodium": 490.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.698
    }
   },
   {
@@ -2186,6 +3081,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "grains",
    "usda_desc": "Rice, white, long-grain, regular, raw, enriched",
@@ -2204,7 +3101,8 @@
     "iron": 4.31,
     "potassium": 115.0,
     "sodium": 5.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.18
    }
   },
   {
@@ -2231,6 +3129,8 @@
    "flags": [
     "gluten"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "grains",
    "usda_desc": "Bread, whole-wheat, commercially prepared",
@@ -2249,7 +3149,8 @@
     "iron": 2.47,
     "potassium": 254.0,
     "sodium": 455.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.722
    }
   },
   {
@@ -2276,6 +3177,8 @@
    "flags": [
     "gluten"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "grains",
    "usda_desc": "Pasta, whole-wheat, dry",
@@ -2294,7 +3197,100 @@
     "iron": 3.62,
     "potassium": 434.0,
     "sodium": 6.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 0.428
+   }
+  },
+  {
+   "id": "lima_frozen",
+   "name": "Baby lima beans (frozen)",
+   "group": "Carbohydrates",
+   "type": "Starchy Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.891,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.8348/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11039",
+   "serving_g": 82,
+   "serving_desc": "1/2 cup",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": null,
+   "usda_desc": "Lima beans, immature seeds, frozen, baby, unprepared",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.637346,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 132.0,
+    "protein": 7.59,
+    "carb": 25.14,
+    "fat": 0.44,
+    "fiber": 6.0,
+    "sugar": 0.0,
+    "calcium": 35.0,
+    "iron": 2.21,
+    "potassium": 452.0,
+    "sodium": 52.0,
+    "vitc": 8.3,
+    "satfat": 0.102
+   }
+  },
+  {
+   "id": "corn_can",
+   "name": "Corn (canned)",
+   "group": "Carbohydrates",
+   "type": "Starchy Vegetables",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.345,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.2188/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11170",
+   "serving_g": 128,
+   "serving_desc": "1/2 cup",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": null,
+   "usda_desc": "Corn, sweet, yellow, canned, brine pack, regular pack, solids and liquids",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.296517,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 61.0,
+    "protein": 1.95,
+    "carb": 13.86,
+    "fat": 0.77,
+    "fiber": 1.7,
+    "sugar": 4.15,
+    "calcium": 4.0,
+    "iron": 0.36,
+    "potassium": 136.0,
+    "sodium": 195.0,
+    "vitc": 2.6,
+    "satfat": 0.077
    }
   },
   {
@@ -2319,6 +3315,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": null,
    "usda_desc": "Corn, sweet, yellow, frozen, kernels cut off cob, unprepared",
@@ -2337,7 +3335,146 @@
     "iron": 0.42,
     "potassium": 213.0,
     "sodium": 3.0,
-    "vitc": 6.4
+    "vitc": 6.4,
+    "satfat": 0.119
+   }
+  },
+  {
+   "id": "fries_frozen",
+   "name": "French fries (frozen)",
+   "group": "Carbohydrates",
+   "type": "Starchy Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.571,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.5209/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11842",
+   "serving_g": 85,
+   "serving_desc": "3 oz (about 13 fries), baked",
+   "max_servings": 1,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": null,
+   "usda_desc": "Potatoes, french fried, all types, salt not added in processing, frozen, as purchased",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.566799,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 150.0,
+    "protein": 2.24,
+    "carb": 24.81,
+    "fat": 4.66,
+    "fiber": 1.9,
+    "sugar": 0.2,
+    "calcium": 9.0,
+    "iron": 0.62,
+    "potassium": 408.0,
+    "sodium": 23.0,
+    "vitc": 17.3,
+    "satfat": 0.94
+   }
+  },
+  {
+   "id": "peas_can",
+   "name": "Green peas (canned)",
+   "group": "Carbohydrates",
+   "type": "Starchy Vegetables",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.569,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.4219/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11306",
+   "serving_g": 124,
+   "serving_desc": "1/2 cup",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": null,
+   "usda_desc": "Peas, green, canned, regular pack, solids and liquids",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.345899,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 58.0,
+    "protein": 3.01,
+    "carb": 10.6,
+    "fat": 0.48,
+    "fiber": 3.3,
+    "sugar": 3.2,
+    "calcium": 20.0,
+    "iron": 1.29,
+    "potassium": 106.0,
+    "sodium": 185.0,
+    "vitc": 7.8,
+    "satfat": 0.086
+   }
+  },
+  {
+   "id": "peas_frozen",
+   "name": "Green peas (frozen)",
+   "group": "Carbohydrates",
+   "type": "Starchy Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.235,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.1910/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11312",
+   "serving_g": 67,
+   "serving_desc": "1/2 cup",
+   "max_servings": 3,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": null,
+   "cap_group": null,
+   "usda_desc": "Peas, green, frozen, unprepared",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.492725,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 77.0,
+    "protein": 5.22,
+    "carb": 13.62,
+    "fat": 0.4,
+    "fiber": 4.5,
+    "sugar": 5.0,
+    "calcium": 22.0,
+    "iron": 1.53,
+    "potassium": 153.0,
+    "sodium": 108.0,
+    "vitc": 18.0,
+    "satfat": 0.066
    }
   },
   {
@@ -2365,6 +3502,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": null,
    "usda_desc": "Potatoes, flesh and skin, raw",
@@ -2383,7 +3522,8 @@
     "iron": 0.81,
     "potassium": 425.0,
     "sodium": 6.0,
-    "vitc": 19.7
+    "vitc": 19.7,
+    "satfat": 0.025
    }
   },
   {
@@ -2408,6 +3548,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": null,
    "usda_desc": "Sweet potato, raw, unprepared",
@@ -2426,7 +3568,8 @@
     "iron": 0.61,
     "potassium": 337.0,
     "sodium": 55.0,
-    "vitc": 2.4
+    "vitc": 2.4,
+    "satfat": 0.018
    }
   },
   {
@@ -2451,6 +3594,8 @@
     0.5
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 125,
    "cap_group": null,
    "usda_desc": "Apples, raw, with skin",
@@ -2469,7 +3614,54 @@
     "iron": 0.12,
     "potassium": 107.0,
     "sodium": 1.0,
-    "vitc": 4.6
+    "vitc": 4.6,
+    "satfat": 0.028
+   }
+  },
+  {
+   "id": "applesauce",
+   "name": "Applesauce (unsweetened)",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.333,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.2081/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "09019",
+   "serving_g": 122,
+   "serving_desc": "1/2 cup",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 244,
+   "cap_group": null,
+   "usda_desc": "Applesauce, canned, unsweetened, without added ascorbic acid (includes USDA commodity)",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.293871,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 42.0,
+    "protein": 0.17,
+    "carb": 11.27,
+    "fat": 0.1,
+    "fiber": 1.1,
+    "sugar": 9.39,
+    "calcium": 4.0,
+    "iron": 0.23,
+    "potassium": 74.0,
+    "sodium": 2.0,
+    "vitc": 1.0,
+    "satfat": 0.008
    }
   },
   {
@@ -2497,6 +3689,8 @@
     0.5
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 118,
    "cap_group": null,
    "usda_desc": "Bananas, raw",
@@ -2515,7 +3709,54 @@
     "iron": 0.26,
     "potassium": 358.0,
     "sodium": 1.0,
-    "vitc": 8.7
+    "vitc": 8.7,
+    "satfat": 0.112
+   }
+  },
+  {
+   "id": "blackberries",
+   "name": "Blackberries",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 7.249,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $6.8345/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.96,
+   "ndb": "09042",
+   "serving_g": 144,
+   "serving_desc": "1 cup",
+   "max_servings": 1,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 144,
+   "cap_group": null,
+   "usda_desc": "Blackberries, raw",
+   "usda_refuse_pct": 4.0,
+   "usda_refuse_desc": "Caps and spoiled berries",
+   "cost_per_100g": 1.664692,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 43.0,
+    "protein": 1.39,
+    "carb": 9.61,
+    "fat": 0.49,
+    "fiber": 5.3,
+    "sugar": 4.88,
+    "calcium": 29.0,
+    "iron": 0.62,
+    "potassium": 162.0,
+    "sodium": 1.0,
+    "vitc": 21.0,
+    "satfat": 0.014
    }
   },
   {
@@ -2540,6 +3781,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 155,
    "cap_group": null,
    "usda_desc": "Blueberries, frozen, unsweetened",
@@ -2558,7 +3801,379 @@
     "iron": 0.18,
     "potassium": 54.0,
     "sodium": 1.0,
-    "vitc": 2.5
+    "vitc": 2.5,
+    "satfat": 0.053
+   }
+  },
+  {
+   "id": "cantaloupe",
+   "name": "Cantaloupe",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 0.84,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $0.7919/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.51,
+   "ndb": "09181",
+   "serving_g": 160,
+   "serving_desc": "1 cup cubes",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 160,
+   "cap_group": null,
+   "usda_desc": "Melons, cantaloupe, raw",
+   "usda_refuse_pct": 49.0,
+   "usda_refuse_desc": "9% cavity contents, 1% cutting loss, 39% rind",
+   "cost_per_100g": 0.363108,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 34.0,
+    "protein": 0.84,
+    "carb": 8.16,
+    "fat": 0.19,
+    "fiber": 0.9,
+    "sugar": 7.86,
+    "calcium": 9.0,
+    "iron": 0.21,
+    "potassium": 267.0,
+    "sodium": 16.0,
+    "vitc": 36.7,
+    "satfat": 0.051
+   }
+  },
+  {
+   "id": "cherries",
+   "name": "Cherries",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 3.882,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $3.6599/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.92,
+   "ndb": "09070",
+   "serving_g": 154,
+   "serving_desc": "1 cup, pitted",
+   "max_servings": 1,
+   "meal": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 154,
+   "cap_group": null,
+   "usda_desc": "Cherries, sweet, raw",
+   "usda_refuse_pct": 8.0,
+   "usda_refuse_desc": "Pits and stems",
+   "cost_per_100g": 0.930239,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 63.0,
+    "protein": 1.06,
+    "carb": 16.01,
+    "fat": 0.2,
+    "fiber": 2.1,
+    "sugar": 12.82,
+    "calcium": 13.0,
+    "iron": 0.36,
+    "potassium": 222.0,
+    "sodium": 0.0,
+    "vitc": 7.0,
+    "satfat": 0.038
+   }
+  },
+  {
+   "id": "clementines",
+   "name": "Clementines",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.682,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.5856/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606; cup-equivalent 210 g from USDA ERS (no USDA cup measure); USDA lists no saturated-fat value, counted as 0",
+   "bls": null,
+   "edible_yield": 0.77,
+   "ndb": "09433",
+   "serving_g": 210,
+   "serving_desc": "about 3 clementines",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 210,
+   "cap_group": null,
+   "usda_desc": "Clementines, raw",
+   "usda_refuse_pct": 23.0,
+   "usda_refuse_desc": "Peel and seeds",
+   "cost_per_100g": 0.481573,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 47.0,
+    "protein": 0.85,
+    "carb": 12.02,
+    "fat": 0.15,
+    "fiber": 1.7,
+    "sugar": 9.18,
+    "calcium": 30.0,
+    "iron": 0.14,
+    "potassium": 177.0,
+    "sodium": 1.0,
+    "vitc": 48.8,
+    "satfat": 0.0
+   }
+  },
+  {
+   "id": "dates",
+   "name": "Dates (pitted)",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Dried, per lb (USDA ERS U.S. average)",
+   "price": 6.356,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $5.8879/lb x BLS CPI other processed fruits and vegetables including dried (CUUR0000SEFM03) Sep 2026 / 2023 avg = 1.0795; sold pitted, so USDA's 10% pit refuse is not applied",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "09087",
+   "serving_g": 37,
+   "serving_desc": "1/4 cup chopped",
+   "max_servings": 1,
+   "meal": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 73.5,
+   "cap_group": null,
+   "usda_desc": "Dates, deglet noor",
+   "usda_refuse_pct": 10.0,
+   "usda_refuse_desc": "Pits",
+   "cost_per_100g": 1.401235,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 282.0,
+    "protein": 2.45,
+    "carb": 75.03,
+    "fat": 0.39,
+    "fiber": 8.0,
+    "sugar": 63.35,
+    "calcium": 39.0,
+    "iron": 1.02,
+    "potassium": 656.0,
+    "sodium": 2.0,
+    "vitc": 0.4,
+    "satfat": 0.032
+   }
+  },
+  {
+   "id": "apricots_dried",
+   "name": "Dried apricots",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Dried, per lb (USDA ERS U.S. average)",
+   "price": 9.32,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $8.6343/lb x BLS CPI other processed fruits and vegetables including dried (CUUR0000SEFM03) Sep 2026 / 2023 avg = 1.0795",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "09032",
+   "serving_g": 33,
+   "serving_desc": "1/4 cup halves",
+   "max_servings": 1,
+   "meal": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 65,
+   "cap_group": null,
+   "usda_desc": "Apricots, dried, sulfured, uncooked",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 2.054674,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 241.0,
+    "protein": 3.39,
+    "carb": 62.64,
+    "fat": 0.51,
+    "fiber": 7.3,
+    "sugar": 53.44,
+    "calcium": 55.0,
+    "iron": 2.66,
+    "potassium": 1162.0,
+    "sodium": 10.0,
+    "vitc": 1.0,
+    "satfat": 0.017
+   }
+  },
+  {
+   "id": "cranberries_dried",
+   "name": "Dried cranberries (sweetened)",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Dried, per lb (USDA ERS U.S. average)",
+   "price": 5.682,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $5.2639/lb x BLS CPI other processed fruits and vegetables including dried (CUUR0000SEFM03) Sep 2026 / 2023 avg = 1.0795",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "09079",
+   "serving_g": 40,
+   "serving_desc": "1/4 cup",
+   "max_servings": 1,
+   "meal": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 80,
+   "cap_group": null,
+   "usda_desc": "Cranberries, dried, sweetened",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 1.252646,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 308.0,
+    "protein": 0.17,
+    "carb": 82.8,
+    "fat": 1.09,
+    "fiber": 5.3,
+    "sugar": 72.56,
+    "calcium": 9.0,
+    "iron": 0.39,
+    "potassium": 49.0,
+    "sodium": 5.0,
+    "vitc": 0.2,
+    "satfat": 0.088
+   }
+  },
+  {
+   "id": "fruit_cocktail",
+   "name": "Fruit cocktail (canned in juice)",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 2.925,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.6505/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "09097",
+   "serving_g": 119,
+   "serving_desc": "1/2 cup",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 237,
+   "cap_group": null,
+   "usda_desc": "Fruit cocktail, (peach and pineapple and pear and grape and cherry), canned, juice pack, solids and liquids",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.644841,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 46.0,
+    "protein": 0.46,
+    "carb": 11.86,
+    "fat": 0.01,
+    "fiber": 1.0,
+    "sugar": 10.86,
+    "calcium": 8.0,
+    "iron": 0.21,
+    "potassium": 95.0,
+    "sodium": 4.0,
+    "vitc": 2.7,
+    "satfat": 0.001
+   }
+  },
+  {
+   "id": "grapefruit",
+   "name": "Grapefruit",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Grapefruit, per lb (BLS U.S. average)",
+   "price": 1.624,
+   "package_g": 453.6,
+   "price_note": "BLS APU0000711411 \"Grapefruit, per lb\", U.S. city average, Sep 2026; edible yield 50% (USDA refuse: peel, seeds, membrane)",
+   "bls": [
+    1.624,
+    453.592
+   ],
+   "edible_yield": 0.5,
+   "ndb": "09111",
+   "serving_g": 230,
+   "serving_desc": "1 cup sections",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "bls",
+   "core": false,
+   "cup_eq_g": 230,
+   "cap_group": null,
+   "usda_desc": "Grapefruit, raw, pink and red and white, all areas",
+   "usda_refuse_pct": 50.0,
+   "usda_refuse_desc": "Peel, seeds, core, and membrane",
+   "cost_per_100g": 0.716049,
+   "bls_cost_per_100g": 0.716062,
+   "per100g": {
+    "kcal": 32.0,
+    "protein": 0.63,
+    "carb": 8.08,
+    "fat": 0.1,
+    "fiber": 1.1,
+    "sugar": 6.98,
+    "calcium": 12.0,
+    "iron": 0.09,
+    "potassium": 139.0,
+    "sodium": 0.0,
+    "vitc": 34.4,
+    "satfat": 0.014
    }
   },
   {
@@ -2583,6 +4198,8 @@
     1
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 151,
    "cap_group": null,
    "usda_desc": "Grapes, red or green (European type, such as Thompson seedless), raw",
@@ -2601,7 +4218,192 @@
     "iron": 0.36,
     "potassium": 191.0,
     "sodium": 2.0,
-    "vitc": 3.2
+    "vitc": 3.2,
+    "satfat": 0.054
+   }
+  },
+  {
+   "id": "honeydew",
+   "name": "Honeydew melon",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.326,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.2501/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.46,
+   "ndb": "09184",
+   "serving_g": 170,
+   "serving_desc": "1 cup diced",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 170,
+   "cap_group": null,
+   "usda_desc": "Melons, honeydew, raw",
+   "usda_refuse_pct": 54.0,
+   "usda_refuse_desc": "5% cavity contents, rind 49%",
+   "cost_per_100g": 0.635496,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 36.0,
+    "protein": 0.54,
+    "carb": 9.09,
+    "fat": 0.14,
+    "fiber": 0.8,
+    "sugar": 8.12,
+    "calcium": 6.0,
+    "iron": 0.17,
+    "potassium": 228.0,
+    "sodium": 18.0,
+    "vitc": 18.0,
+    "satfat": 0.038
+   }
+  },
+  {
+   "id": "kiwi",
+   "name": "Kiwifruit",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 3.006,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.8347/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.76,
+   "ndb": "09148",
+   "serving_g": 180,
+   "serving_desc": "1 cup sliced",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 180,
+   "cap_group": null,
+   "usda_desc": "Kiwifruit, green, raw",
+   "usda_refuse_pct": 24.0,
+   "usda_refuse_desc": "Skin",
+   "cost_per_100g": 0.871972,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 61.0,
+    "protein": 1.14,
+    "carb": 14.66,
+    "fat": 0.52,
+    "fiber": 3.0,
+    "sugar": 8.99,
+    "calcium": 34.0,
+    "iron": 0.31,
+    "potassium": 312.0,
+    "sodium": 3.0,
+    "vitc": 92.7,
+    "satfat": 0.029
+   }
+  },
+  {
+   "id": "mango",
+   "name": "Mango",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.547,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.4587/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.71,
+   "ndb": "09176",
+   "serving_g": 165,
+   "serving_desc": "1 cup pieces",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 165,
+   "cap_group": null,
+   "usda_desc": "Mangos, raw",
+   "usda_refuse_pct": 29.0,
+   "usda_refuse_desc": "Seeds and skin",
+   "cost_per_100g": 0.480351,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 60.0,
+    "protein": 0.82,
+    "carb": 14.98,
+    "fat": 0.38,
+    "fiber": 1.6,
+    "sugar": 13.66,
+    "calcium": 11.0,
+    "iron": 0.16,
+    "potassium": 168.0,
+    "sodium": 1.0,
+    "vitc": 36.4,
+    "satfat": 0.092
+   }
+  },
+  {
+   "id": "nectarines",
+   "name": "Nectarines",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 2.625,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.4753/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.91,
+   "ndb": "09191",
+   "serving_g": 143,
+   "serving_desc": "1 cup slices",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 143,
+   "cap_group": null,
+   "usda_desc": "Nectarines, raw",
+   "usda_refuse_pct": 9.0,
+   "usda_refuse_desc": "Pit",
+   "cost_per_100g": 0.635938,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 44.0,
+    "protein": 1.06,
+    "carb": 10.55,
+    "fat": 0.32,
+    "fiber": 1.7,
+    "sugar": 7.89,
+    "calcium": 6.0,
+    "iron": 0.28,
+    "potassium": 201.0,
+    "sodium": 0.0,
+    "vitc": 5.4,
+    "satfat": 0.025
    }
   },
   {
@@ -2626,6 +4428,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 249,
    "cap_group": null,
    "usda_desc": "Orange juice, chilled, includes from concentrate",
@@ -2644,7 +4448,8 @@
     "iron": 0.13,
     "potassium": 178.0,
     "sodium": 2.0,
-    "vitc": 33.6
+    "vitc": 33.6,
+    "satfat": 0.014
    }
   },
   {
@@ -2672,6 +4477,8 @@
     0.5
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 140,
    "cap_group": null,
    "usda_desc": "Oranges, raw, navels",
@@ -2690,7 +4497,422 @@
     "iron": 0.13,
     "potassium": 166.0,
     "sodium": 1.0,
-    "vitc": 59.1
+    "vitc": 59.1,
+    "satfat": 0.017
+   }
+  },
+  {
+   "id": "papaya",
+   "name": "Papaya",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.385,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.3055/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.62,
+   "ndb": "09226",
+   "serving_g": 145,
+   "serving_desc": "1 cup pieces",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 145,
+   "cap_group": null,
+   "usda_desc": "Papayas, raw",
+   "usda_refuse_pct": 38.0,
+   "usda_refuse_desc": "Seeds and skin",
+   "cost_per_100g": 0.492476,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 43.0,
+    "protein": 0.47,
+    "carb": 10.82,
+    "fat": 0.26,
+    "fiber": 1.7,
+    "sugar": 7.82,
+    "calcium": 20.0,
+    "iron": 0.25,
+    "potassium": 182.0,
+    "sodium": 8.0,
+    "vitc": 60.9,
+    "satfat": 0.081
+   }
+  },
+  {
+   "id": "peaches",
+   "name": "Peaches",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 2.606,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.4571/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.96,
+   "ndb": "09236",
+   "serving_g": 154,
+   "serving_desc": "1 cup slices",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 154,
+   "cap_group": null,
+   "usda_desc": "Peaches, yellow, raw",
+   "usda_refuse_pct": 4.0,
+   "usda_refuse_desc": "Pit",
+   "cost_per_100g": 0.598453,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 39.0,
+    "protein": 0.91,
+    "carb": 9.54,
+    "fat": 0.25,
+    "fiber": 1.5,
+    "sugar": 8.39,
+    "calcium": 6.0,
+    "iron": 0.25,
+    "potassium": 190.0,
+    "sodium": 0.0,
+    "vitc": 6.6,
+    "satfat": 0.019
+   }
+  },
+  {
+   "id": "peaches_can",
+   "name": "Peaches (canned in juice)",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 2.744,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.4868/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "09238",
+   "serving_g": 125,
+   "serving_desc": "1/2 cup",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 250,
+   "cap_group": null,
+   "usda_desc": "Peaches, canned, juice pack, solids and liquids",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.604938,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 44.0,
+    "protein": 0.63,
+    "carb": 11.57,
+    "fat": 0.03,
+    "fiber": 1.3,
+    "sugar": 10.27,
+    "calcium": 6.0,
+    "iron": 0.27,
+    "potassium": 128.0,
+    "sodium": 4.0,
+    "vitc": 3.6,
+    "satfat": 0.004
+   }
+  },
+  {
+   "id": "pears",
+   "name": "Pears",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 2.033,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.9167/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.9,
+   "ndb": "09252",
+   "serving_g": 140,
+   "serving_desc": "1 cup slices",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 140,
+   "cap_group": null,
+   "usda_desc": "Pears, raw",
+   "usda_refuse_pct": 10.0,
+   "usda_refuse_desc": "Stem, core and seeds",
+   "cost_per_100g": 0.497991,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 57.0,
+    "protein": 0.36,
+    "carb": 15.23,
+    "fat": 0.14,
+    "fiber": 3.1,
+    "sugar": 9.75,
+    "calcium": 9.0,
+    "iron": 0.18,
+    "potassium": 116.0,
+    "sodium": 1.0,
+    "vitc": 4.3,
+    "satfat": 0.022
+   }
+  },
+  {
+   "id": "pears_can",
+   "name": "Pears (canned in juice)",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 2.57,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.3290/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "09254",
+   "serving_g": 124,
+   "serving_desc": "1/2 cup",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 248,
+   "cap_group": null,
+   "usda_desc": "Pears, canned, juice pack, solids and liquids",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.566578,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 50.0,
+    "protein": 0.34,
+    "carb": 12.94,
+    "fat": 0.07,
+    "fiber": 1.6,
+    "sugar": 9.7,
+    "calcium": 9.0,
+    "iron": 0.29,
+    "potassium": 96.0,
+    "sodium": 4.0,
+    "vitc": 1.6,
+    "satfat": 0.004
+   }
+  },
+  {
+   "id": "pineapple",
+   "name": "Pineapple",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 0.709,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $0.6684/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.51,
+   "ndb": "09266",
+   "serving_g": 165,
+   "serving_desc": "1 cup chunks",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 165,
+   "cap_group": null,
+   "usda_desc": "Pineapple, raw, all varieties",
+   "usda_refuse_pct": 49.0,
+   "usda_refuse_desc": "8% core, 16% crown, 26% parings",
+   "cost_per_100g": 0.306481,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 50.0,
+    "protein": 0.54,
+    "carb": 13.12,
+    "fat": 0.12,
+    "fiber": 1.4,
+    "sugar": 9.85,
+    "calcium": 13.0,
+    "iron": 0.29,
+    "potassium": 109.0,
+    "sodium": 1.0,
+    "vitc": 47.8,
+    "satfat": 0.009
+   }
+  },
+  {
+   "id": "pineapple_can",
+   "name": "Pineapple (canned in juice)",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.899,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.7215/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "09268",
+   "serving_g": 125,
+   "serving_desc": "1/2 cup",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 249,
+   "cap_group": null,
+   "usda_desc": "Pineapple, canned, juice pack, solids and liquids",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.418651,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 60.0,
+    "protein": 0.42,
+    "carb": 15.7,
+    "fat": 0.08,
+    "fiber": 0.8,
+    "sugar": 14.45,
+    "calcium": 14.0,
+    "iron": 0.28,
+    "potassium": 122.0,
+    "sodium": 1.0,
+    "vitc": 9.5,
+    "satfat": 0.006
+   }
+  },
+  {
+   "id": "plums",
+   "name": "Plums",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 2.819,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.6582/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.94,
+   "ndb": "09279",
+   "serving_g": 165,
+   "serving_desc": "1 cup sliced",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 165,
+   "cap_group": null,
+   "usda_desc": "Plums, raw",
+   "usda_refuse_pct": 6.0,
+   "usda_refuse_desc": "Pits",
+   "cost_per_100g": 0.661141,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 46.0,
+    "protein": 0.7,
+    "carb": 11.42,
+    "fat": 0.28,
+    "fiber": 1.4,
+    "sugar": 9.92,
+    "calcium": 6.0,
+    "iron": 0.17,
+    "potassium": 157.0,
+    "sodium": 0.0,
+    "vitc": 9.5,
+    "satfat": 0.017
+   }
+  },
+  {
+   "id": "prunes",
+   "name": "Prunes (pitted)",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Dried, per lb (USDA ERS U.S. average)",
+   "price": 7.455,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $6.9064/lb x BLS CPI other processed fruits and vegetables including dried (CUUR0000SEFM03) Sep 2026 / 2023 avg = 1.0795; sold pitted, so USDA's 13% pit refuse is not applied",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "09291",
+   "serving_g": 44,
+   "serving_desc": "1/4 cup",
+   "max_servings": 1,
+   "meal": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 87,
+   "cap_group": null,
+   "usda_desc": "Plums, dried (prunes), uncooked",
+   "usda_refuse_pct": 13.0,
+   "usda_refuse_desc": "Pits",
+   "cost_per_100g": 1.643519,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 240.0,
+    "protein": 2.18,
+    "carb": 63.88,
+    "fat": 0.38,
+    "fiber": 7.1,
+    "sugar": 38.13,
+    "calcium": 43.0,
+    "iron": 0.93,
+    "potassium": 732.0,
+    "sodium": 2.0,
+    "vitc": 0.6,
+    "satfat": 0.088
    }
   },
   {
@@ -2715,6 +4937,8 @@
     1
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 82,
    "cap_group": null,
    "usda_desc": "Raisins, seedless",
@@ -2733,7 +4957,54 @@
     "iron": 1.88,
     "potassium": 749.0,
     "sodium": 11.0,
-    "vitc": 2.3
+    "vitc": 2.3,
+    "satfat": 0.058
+   }
+  },
+  {
+   "id": "raspberries",
+   "name": "Raspberries",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 8.45,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $7.9668/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.96,
+   "ndb": "09302",
+   "serving_g": 123,
+   "serving_desc": "1 cup",
+   "max_servings": 1,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 123,
+   "cap_group": null,
+   "usda_desc": "Raspberries, raw",
+   "usda_refuse_pct": 4.0,
+   "usda_refuse_desc": "Caps, stems, and spoiled berries",
+   "cost_per_100g": 1.940495,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 52.0,
+    "protein": 1.2,
+    "carb": 11.94,
+    "fat": 0.65,
+    "fiber": 6.5,
+    "sugar": 4.42,
+    "calcium": 25.0,
+    "iron": 0.69,
+    "potassium": 151.0,
+    "sodium": 1.0,
+    "vitc": 26.2,
+    "satfat": 0.019
    }
   },
   {
@@ -2761,6 +5032,8 @@
     0.5
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 152,
    "cap_group": null,
    "usda_desc": "Strawberries, raw",
@@ -2779,7 +5052,284 @@
     "iron": 0.41,
     "potassium": 153.0,
     "sodium": 1.0,
-    "vitc": 58.8
+    "vitc": 58.8,
+    "satfat": 0.015
+   }
+  },
+  {
+   "id": "strawberries_frozen",
+   "name": "Strawberries (frozen)",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 3.536,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $3.4675/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "09318",
+   "serving_g": 149,
+   "serving_desc": "1 cup",
+   "max_servings": 2,
+   "meal": [
+    0.5,
+    0,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 149,
+   "cap_group": null,
+   "usda_desc": "Strawberries, frozen, unsweetened",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.779541,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 35.0,
+    "protein": 0.43,
+    "carb": 9.13,
+    "fat": 0.11,
+    "fiber": 2.1,
+    "sugar": 4.56,
+    "calcium": 16.0,
+    "iron": 0.75,
+    "potassium": 148.0,
+    "sodium": 2.0,
+    "vitc": 41.2,
+    "satfat": 0.006
+   }
+  },
+  {
+   "id": "watermelon",
+   "name": "Watermelon",
+   "group": "Fruits",
+   "type": "Fruit",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 0.43,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $0.4058/lb x BLS CPI fresh fruits (CUUR0000SEFK) Sep 2026 / 2023 avg = 1.0606",
+   "bls": null,
+   "edible_yield": 0.52,
+   "ndb": "09326",
+   "serving_g": 152,
+   "serving_desc": "1 cup diced",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 152,
+   "cap_group": null,
+   "usda_desc": "Watermelon, raw",
+   "usda_refuse_pct": 48.0,
+   "usda_refuse_desc": "Rind, seeds, and cutting loss",
+   "cost_per_100g": 0.182302,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 30.0,
+    "protein": 0.61,
+    "carb": 7.55,
+    "fat": 0.15,
+    "fiber": 0.4,
+    "sugar": 6.2,
+    "calcium": 7.0,
+    "iron": 0.24,
+    "potassium": 112.0,
+    "sodium": 1.0,
+    "vitc": 8.1,
+    "satfat": 0.016
+   }
+  },
+  {
+   "id": "acorn_squash",
+   "name": "Acorn squash",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.316,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.2414/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603; USDA lists no sugars value; counted as 0",
+   "bls": null,
+   "edible_yield": 0.76,
+   "ndb": "11482",
+   "serving_g": 140,
+   "serving_desc": "1 cup cubes",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 140,
+   "cap_group": null,
+   "usda_desc": "Squash, winter, acorn, raw",
+   "usda_refuse_pct": 24.0,
+   "usda_refuse_desc": "Rind",
+   "cost_per_100g": 0.381741,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 40.0,
+    "protein": 0.8,
+    "carb": 10.42,
+    "fat": 0.1,
+    "fiber": 1.5,
+    "sugar": 0.0,
+    "calcium": 33.0,
+    "iron": 0.7,
+    "potassium": 347.0,
+    "sodium": 3.0,
+    "vitc": 11.0,
+    "satfat": 0.021
+   }
+  },
+  {
+   "id": "asparagus",
+   "name": "Asparagus",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 3.406,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $3.2125/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603",
+   "bls": null,
+   "edible_yield": 0.53,
+   "ndb": "11011",
+   "serving_g": 134,
+   "serving_desc": "1 cup",
+   "max_servings": 1,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 134,
+   "cap_group": null,
+   "usda_desc": "Asparagus, raw",
+   "usda_refuse_pct": 47.0,
+   "usda_refuse_desc": "Butt ends",
+   "cost_per_100g": 1.416758,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 20.0,
+    "protein": 2.2,
+    "carb": 3.88,
+    "fat": 0.12,
+    "fiber": 2.1,
+    "sugar": 1.88,
+    "calcium": 24.0,
+    "iron": 2.14,
+    "potassium": 202.0,
+    "sodium": 2.0,
+    "vitc": 5.6,
+    "satfat": 0.04
+   }
+  },
+  {
+   "id": "baby_carrots",
+   "name": "Baby carrots",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.551,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.4630/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603; cup-equivalent 125 g from USDA ERS",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11960",
+   "serving_g": 125,
+   "serving_desc": "1 cup (about 12)",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 125,
+   "cap_group": null,
+   "usda_desc": "Carrots, baby, raw",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.341931,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 35.0,
+    "protein": 0.64,
+    "carb": 8.24,
+    "fat": 0.13,
+    "fiber": 2.9,
+    "sugar": 4.76,
+    "calcium": 32.0,
+    "iron": 0.89,
+    "potassium": 237.0,
+    "sodium": 78.0,
+    "vitc": 2.6,
+    "satfat": 0.023
+   }
+  },
+  {
+   "id": "beets_can",
+   "name": "Beets (canned)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.388,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.2579/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11082",
+   "serving_g": 246,
+   "serving_desc": "1 cup",
+   "max_servings": 1,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 246,
+   "cap_group": null,
+   "usda_desc": "Beets, canned, regular pack, solids and liquids",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.305996,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 30.0,
+    "protein": 0.73,
+    "carb": 7.14,
+    "fat": 0.09,
+    "fiber": 1.2,
+    "sugar": 6.53,
+    "calcium": 18.0,
+    "iron": 0.73,
+    "potassium": 159.0,
+    "sodium": 143.0,
+    "vitc": 2.8,
+    "satfat": 0.011
    }
   },
   {
@@ -2804,6 +5354,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 91,
    "cap_group": null,
    "usda_desc": "Broccoli, frozen, spears, unprepared",
@@ -2822,7 +5374,192 @@
     "iron": 0.72,
     "potassium": 250.0,
     "sodium": 17.0,
-    "vitc": 68.3
+    "vitc": 68.3,
+    "satfat": 0.052
+   }
+  },
+  {
+   "id": "brussels_frozen",
+   "name": "Brussels sprouts (frozen)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.942,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.8850/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199; cup-equivalent from USDA ERS (cooked cup / cooking yield); USDA lists no sugars value",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11100",
+   "serving_g": 162,
+   "serving_desc": "about 1 cup",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 162,
+   "cap_group": null,
+   "usda_desc": "Brussels sprouts, frozen, unprepared",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.648589,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 41.0,
+    "protein": 3.78,
+    "carb": 7.86,
+    "fat": 0.41,
+    "fiber": 3.8,
+    "sugar": 0.0,
+    "calcium": 26.0,
+    "iron": 0.93,
+    "potassium": 370.0,
+    "sodium": 10.0,
+    "vitc": 74.1,
+    "satfat": 0.084
+   }
+  },
+  {
+   "id": "butternut",
+   "name": "Butternut squash",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.348,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.2710/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603",
+   "bls": null,
+   "edible_yield": 0.84,
+   "ndb": "11485",
+   "serving_g": 140,
+   "serving_desc": "1 cup cubes",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 140,
+   "cap_group": null,
+   "usda_desc": "Squash, winter, butternut, raw",
+   "usda_refuse_pct": 16.0,
+   "usda_refuse_desc": "Seeds, rind and trimmings",
+   "cost_per_100g": 0.353783,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 45.0,
+    "protein": 1.0,
+    "carb": 11.69,
+    "fat": 0.1,
+    "fiber": 2.0,
+    "sugar": 2.2,
+    "calcium": 48.0,
+    "iron": 0.7,
+    "potassium": 352.0,
+    "sodium": 4.0,
+    "vitc": 21.0,
+    "satfat": 0.021
+   }
+  },
+  {
+   "id": "cabbage",
+   "name": "Cabbage (green)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 0.876,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $0.8266/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603",
+   "bls": null,
+   "edible_yield": 0.8,
+   "ndb": "11109",
+   "serving_g": 89,
+   "serving_desc": "1 cup chopped",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 89,
+   "cap_group": null,
+   "usda_desc": "Cabbage, raw",
+   "usda_refuse_pct": 20.0,
+   "usda_refuse_desc": "Outer leaves and core",
+   "cost_per_100g": 0.241402,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 25.0,
+    "protein": 1.28,
+    "carb": 5.8,
+    "fat": 0.1,
+    "fiber": 2.5,
+    "sugar": 3.2,
+    "calcium": 40.0,
+    "iron": 0.47,
+    "potassium": 170.0,
+    "sodium": 18.0,
+    "vitc": 36.6,
+    "satfat": 0.034
+   }
+  },
+  {
+   "id": "red_cabbage",
+   "name": "Cabbage (red)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.337,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.2607/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603",
+   "bls": null,
+   "edible_yield": 0.8,
+   "ndb": "11112",
+   "serving_g": 89,
+   "serving_desc": "1 cup chopped",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 89,
+   "cap_group": null,
+   "usda_desc": "Cabbage, red, raw",
+   "usda_refuse_pct": 20.0,
+   "usda_refuse_desc": "Outer leaves and core",
+   "cost_per_100g": 0.368441,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 31.0,
+    "protein": 1.43,
+    "carb": 7.37,
+    "fat": 0.16,
+    "fiber": 2.1,
+    "sugar": 3.83,
+    "calcium": 45.0,
+    "iron": 0.8,
+    "potassium": 243.0,
+    "sodium": 27.0,
+    "vitc": 57.0,
+    "satfat": 0.021
    }
   },
   {
@@ -2847,6 +5584,8 @@
     0.5
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 128,
    "cap_group": null,
    "usda_desc": "Carrots, raw",
@@ -2865,7 +5604,330 @@
     "iron": 0.3,
     "potassium": 320.0,
     "sodium": 69.0,
-    "vitc": 5.9
+    "vitc": 5.9,
+    "satfat": 0.037
+   }
+  },
+  {
+   "id": "carrots_can",
+   "name": "Carrots (canned)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.457,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.3206/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11126",
+   "serving_g": 246,
+   "serving_desc": "1 cup slices with liquid",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 246,
+   "cap_group": null,
+   "usda_desc": "Carrots, canned, regular pack, solids and liquids",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.321208,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 23.0,
+    "protein": 0.58,
+    "carb": 5.37,
+    "fat": 0.14,
+    "fiber": 1.8,
+    "sugar": 2.46,
+    "calcium": 31.0,
+    "iron": 0.52,
+    "potassium": 173.0,
+    "sodium": 240.0,
+    "vitc": 2.0,
+    "satfat": 0.025
+   }
+  },
+  {
+   "id": "carrots_frozen",
+   "name": "Carrots (frozen)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.078,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.0378/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11130",
+   "serving_g": 128,
+   "serving_desc": "1 cup slices",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 128,
+   "cap_group": null,
+   "usda_desc": "Carrots, frozen, unprepared",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.458113,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 36.0,
+    "protein": 0.78,
+    "carb": 7.9,
+    "fat": 0.46,
+    "fiber": 3.3,
+    "sugar": 4.76,
+    "calcium": 36.0,
+    "iron": 0.44,
+    "potassium": 235.0,
+    "sodium": 68.0,
+    "vitc": 2.5,
+    "satfat": 0.047
+   }
+  },
+  {
+   "id": "cauliflower_frozen",
+   "name": "Cauliflower (frozen)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.773,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.7191/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11137",
+   "serving_g": 132,
+   "serving_desc": "1 cup pieces",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 132,
+   "cap_group": null,
+   "usda_desc": "Cauliflower, frozen, unprepared",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.611332,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 24.0,
+    "protein": 2.01,
+    "carb": 4.68,
+    "fat": 0.27,
+    "fiber": 2.3,
+    "sugar": 2.22,
+    "calcium": 22.0,
+    "iron": 0.54,
+    "potassium": 193.0,
+    "sodium": 24.0,
+    "vitc": 48.8,
+    "satfat": 0.041
+   }
+  },
+  {
+   "id": "celery",
+   "name": "Celery",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.408,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.3278/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603",
+   "bls": null,
+   "edible_yield": 0.89,
+   "ndb": "11143",
+   "serving_g": 101,
+   "serving_desc": "1 cup chopped",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0,
+    0.5
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 101,
+   "cap_group": null,
+   "usda_desc": "Celery, raw",
+   "usda_refuse_pct": 11.0,
+   "usda_refuse_desc": "Roots and trimmings",
+   "cost_per_100g": 0.34877,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 16.0,
+    "protein": 0.69,
+    "carb": 2.97,
+    "fat": 0.17,
+    "fiber": 1.6,
+    "sugar": 1.34,
+    "calcium": 40.0,
+    "iron": 0.2,
+    "potassium": 260.0,
+    "sodium": 80.0,
+    "vitc": 3.1,
+    "satfat": 0.042
+   }
+  },
+  {
+   "id": "collards",
+   "name": "Collard greens",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 2.633,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.4833/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603",
+   "bls": null,
+   "edible_yield": 0.57,
+   "ndb": "11161",
+   "serving_g": 72,
+   "serving_desc": "2 cups chopped, raw",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 72,
+   "cap_group": null,
+   "usda_desc": "Collards, raw",
+   "usda_refuse_pct": 43.0,
+   "usda_refuse_desc": "Stems",
+   "cost_per_100g": 1.018364,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 32.0,
+    "protein": 3.02,
+    "carb": 5.42,
+    "fat": 0.61,
+    "fiber": 4.0,
+    "sugar": 0.46,
+    "calcium": 232.0,
+    "iron": 0.47,
+    "potassium": 213.0,
+    "sodium": 17.0,
+    "vitc": 35.3,
+    "satfat": 0.055
+   }
+  },
+  {
+   "id": "collards_frozen",
+   "name": "Collard greens (frozen)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.778,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.7240/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199; cup-equivalent from USDA ERS (cooked cup / cooking yield); USDA lists no sugars value",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11163",
+   "serving_g": 187,
+   "serving_desc": "about 1 cup",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 187,
+   "cap_group": null,
+   "usda_desc": "Collards, frozen, chopped, unprepared",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.612434,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 33.0,
+    "protein": 2.69,
+    "carb": 6.46,
+    "fat": 0.37,
+    "fiber": 3.6,
+    "sugar": 0.0,
+    "calcium": 201.0,
+    "iron": 1.07,
+    "potassium": 253.0,
+    "sodium": 48.0,
+    "vitc": 40.0,
+    "satfat": 0.048
+   }
+  },
+  {
+   "id": "cucumber",
+   "name": "Cucumber",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.159,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.0928/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603",
+   "bls": null,
+   "edible_yield": 0.97,
+   "ndb": "11205",
+   "serving_g": 104,
+   "serving_desc": "1 cup slices",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 104,
+   "cap_group": null,
+   "usda_desc": "Cucumber, with peel, raw",
+   "usda_refuse_pct": 3.0,
+   "usda_refuse_desc": "Ends",
+   "cost_per_100g": 0.263414,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 15.0,
+    "protein": 0.65,
+    "carb": 3.63,
+    "fat": 0.11,
+    "fiber": 0.5,
+    "sugar": 1.67,
+    "calcium": 16.0,
+    "iron": 0.28,
+    "potassium": 147.0,
+    "sodium": 2.0,
+    "vitc": 2.8,
+    "satfat": 0.037
    }
   },
   {
@@ -2890,6 +5952,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 235,
    "cap_group": null,
    "usda_desc": "Beans, snap, green, canned, regular pack, solids and liquids",
@@ -2908,7 +5972,54 @@
     "iron": 1.02,
     "potassium": 92.0,
     "sodium": 192.0,
-    "vitc": 2.2
+    "vitc": 2.2,
+    "satfat": 0.04
+   }
+  },
+  {
+   "id": "green_beans_frozen",
+   "name": "Green beans (frozen)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.217,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.1733/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11060",
+   "serving_g": 121,
+   "serving_desc": "1 cup",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 121,
+   "cap_group": null,
+   "usda_desc": "Beans, snap, green, frozen, all styles, unprepared",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.488757,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 39.0,
+    "protein": 1.79,
+    "carb": 7.54,
+    "fat": 0.21,
+    "fiber": 2.6,
+    "sugar": 2.21,
+    "calcium": 42.0,
+    "iron": 0.85,
+    "potassium": 186.0,
+    "sodium": 3.0,
+    "vitc": 12.9,
+    "satfat": 0.047
    }
   },
   {
@@ -2933,6 +6044,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 149,
    "cap_group": null,
    "usda_desc": "Peppers, sweet, green, raw",
@@ -2951,7 +6064,103 @@
     "iron": 0.34,
     "potassium": 175.0,
     "sodium": 3.0,
-    "vitc": 80.4
+    "vitc": 80.4,
+    "satfat": 0.058
+   }
+  },
+  {
+   "id": "iceberg",
+   "name": "Iceberg lettuce",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Lettuce, iceberg, per lb (BLS U.S. average)",
+   "price": 1.636,
+   "package_g": 453.6,
+   "price_note": "BLS APU0000712211 \"Lettuce, iceberg, per lb\", U.S. city average, Sep 2026",
+   "bls": [
+    1.636,
+    453.592
+   ],
+   "edible_yield": 0.95,
+   "ndb": "11252",
+   "serving_g": 144,
+   "serving_desc": "2 cups shredded",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "bls",
+   "core": false,
+   "cup_eq_g": 144,
+   "cap_group": null,
+   "usda_desc": "Lettuce, iceberg (includes crisphead types), raw",
+   "usda_refuse_pct": 5.0,
+   "usda_refuse_desc": "Core",
+   "cost_per_100g": 0.379653,
+   "bls_cost_per_100g": 0.37966,
+   "per100g": {
+    "kcal": 14.0,
+    "protein": 0.9,
+    "carb": 2.97,
+    "fat": 0.14,
+    "fiber": 1.2,
+    "sugar": 1.97,
+    "calcium": 18.0,
+    "iron": 0.41,
+    "potassium": 141.0,
+    "sodium": 10.0,
+    "vitc": 2.8,
+    "satfat": 0.018
+   }
+  },
+  {
+   "id": "kale_frozen",
+   "name": "Kale (frozen)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.326,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.2805/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199; cup-equivalent from USDA ERS (cooked cup / cooking yield); USDA lists no sugars value",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11235",
+   "serving_g": 183,
+   "serving_desc": "about 1 cup",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 183,
+   "cap_group": null,
+   "usda_desc": "Kale, frozen, unprepared",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.512787,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 28.0,
+    "protein": 2.66,
+    "carb": 4.9,
+    "fat": 0.46,
+    "fiber": 2.0,
+    "sugar": 0.0,
+    "calcium": 136.0,
+    "iron": 0.93,
+    "potassium": 333.0,
+    "sodium": 15.0,
+    "vitc": 39.3,
+    "satfat": 0.059
    }
   },
   {
@@ -2976,6 +6185,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 136,
    "cap_group": null,
    "usda_desc": "Vegetables, mixed, frozen, unprepared",
@@ -2994,7 +6205,146 @@
     "iron": 0.95,
     "potassium": 212.0,
     "sodium": 47.0,
-    "vitc": 10.4
+    "vitc": 10.4,
+    "satfat": 0.098
+   }
+  },
+  {
+   "id": "mushrooms",
+   "name": "Mushrooms (white)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 4.405,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $4.1545/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603",
+   "bls": null,
+   "edible_yield": 0.97,
+   "ndb": "11260",
+   "serving_g": 70,
+   "serving_desc": "1 cup pieces",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 70,
+   "cap_group": null,
+   "usda_desc": "Mushrooms, white, raw",
+   "usda_refuse_pct": 3.0,
+   "usda_refuse_desc": "Trimmings",
+   "cost_per_100g": 1.001155,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 22.0,
+    "protein": 3.09,
+    "carb": 3.26,
+    "fat": 0.34,
+    "fiber": 1.0,
+    "sugar": 1.98,
+    "calcium": 3.0,
+    "iron": 0.5,
+    "potassium": 318.0,
+    "sodium": 5.0,
+    "vitc": 2.1,
+    "satfat": 0.05
+   }
+  },
+  {
+   "id": "mustard_greens_frozen",
+   "name": "Mustard greens (frozen)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.978,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.9202/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199; USDA lists no sugars value",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11272",
+   "serving_g": 146,
+   "serving_desc": "1 cup chopped",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 146,
+   "cap_group": null,
+   "usda_desc": "Mustard greens, frozen, unprepared",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.656526,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 20.0,
+    "protein": 2.49,
+    "carb": 3.41,
+    "fat": 0.27,
+    "fiber": 3.3,
+    "sugar": 0.0,
+    "calcium": 116.0,
+    "iron": 1.29,
+    "potassium": 170.0,
+    "sodium": 29.0,
+    "vitc": 25.3,
+    "satfat": 0.014
+   }
+  },
+  {
+   "id": "okra_frozen",
+   "name": "Okra (frozen)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.706,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.6529/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199; cup-equivalent from USDA ERS (cooked cup / cooking yield)",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11280",
+   "serving_g": 189,
+   "serving_desc": "about 1 cup",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 189,
+   "cap_group": null,
+   "usda_desc": "Okra, frozen, unprepared",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.596561,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 30.0,
+    "protein": 1.69,
+    "carb": 6.63,
+    "fat": 0.25,
+    "fiber": 2.2,
+    "sugar": 2.97,
+    "calcium": 81.0,
+    "iron": 0.57,
+    "potassium": 211.0,
+    "sodium": 3.0,
+    "vitc": 12.4,
+    "satfat": 0.065
    }
   },
   {
@@ -3019,6 +6369,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 160,
    "cap_group": null,
    "usda_desc": "Onions, raw",
@@ -3037,7 +6389,146 @@
     "iron": 0.21,
     "potassium": 146.0,
     "sodium": 4.0,
-    "vitc": 7.4
+    "vitc": 7.4,
+    "satfat": 0.042
+   }
+  },
+  {
+   "id": "pumpkin_can",
+   "name": "Pumpkin (canned)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 2.296,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.0809/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11424",
+   "serving_g": 245,
+   "serving_desc": "1 cup",
+   "max_servings": 1,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 245,
+   "cap_group": null,
+   "usda_desc": "Pumpkin, canned, without salt",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.506173,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 34.0,
+    "protein": 1.1,
+    "carb": 8.09,
+    "fat": 0.28,
+    "fiber": 2.9,
+    "sugar": 3.3,
+    "calcium": 26.0,
+    "iron": 1.39,
+    "potassium": 206.0,
+    "sodium": 5.0,
+    "vitc": 4.2,
+    "satfat": 0.146
+   }
+  },
+  {
+   "id": "radishes",
+   "name": "Radishes",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.963,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.8510/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603",
+   "bls": null,
+   "edible_yield": 0.9,
+   "ndb": "11429",
+   "serving_g": 116,
+   "serving_desc": "1 cup slices",
+   "max_servings": 1,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 116,
+   "cap_group": null,
+   "usda_desc": "Radishes, raw",
+   "usda_refuse_pct": 10.0,
+   "usda_refuse_desc": "Stem ends, rootlets and trimmings",
+   "cost_per_100g": 0.480845,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 16.0,
+    "protein": 0.68,
+    "carb": 3.4,
+    "fat": 0.1,
+    "fiber": 1.6,
+    "sugar": 1.86,
+    "calcium": 25.0,
+    "iron": 0.34,
+    "potassium": 233.0,
+    "sodium": 39.0,
+    "vitc": 14.8,
+    "satfat": 0.032
+   }
+  },
+  {
+   "id": "red_pepper",
+   "name": "Red bell pepper",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.808,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.7052/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603",
+   "bls": null,
+   "edible_yield": 0.82,
+   "ndb": "11821",
+   "serving_g": 149,
+   "serving_desc": "1 cup chopped",
+   "max_servings": 1,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 149,
+   "cap_group": null,
+   "usda_desc": "Peppers, sweet, red, raw",
+   "usda_refuse_pct": 18.0,
+   "usda_refuse_desc": "Stem ends, seed and core",
+   "cost_per_100g": 0.486084,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 31.0,
+    "protein": 0.99,
+    "carb": 6.03,
+    "fat": 0.3,
+    "fiber": 2.1,
+    "sugar": 4.2,
+    "calcium": 7.0,
+    "iron": 0.43,
+    "potassium": 211.0,
+    "sodium": 4.0,
+    "vitc": 127.7,
+    "satfat": 0.027
    }
   },
   {
@@ -3065,6 +6556,8 @@
     0
    ],
    "flags": [],
+   "price_source": "bls",
+   "core": true,
    "cup_eq_g": 94,
    "cap_group": null,
    "usda_desc": "Lettuce, cos or romaine, raw",
@@ -3083,7 +6576,100 @@
     "iron": 0.97,
     "potassium": 247.0,
     "sodium": 8.0,
-    "vitc": 4.0
+    "vitc": 4.0,
+    "satfat": 0.039
+   }
+  },
+  {
+   "id": "sauerkraut",
+   "name": "Sauerkraut (canned)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.799,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.6301/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11439",
+   "serving_g": 236,
+   "serving_desc": "1 cup with liquid",
+   "max_servings": 1,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 236,
+   "cap_group": null,
+   "usda_desc": "Sauerkraut, canned, solids and liquids",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.396605,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 19.0,
+    "protein": 0.91,
+    "carb": 4.28,
+    "fat": 0.14,
+    "fiber": 2.9,
+    "sugar": 1.78,
+    "calcium": 30.0,
+    "iron": 1.47,
+    "potassium": 170.0,
+    "sodium": 661.0,
+    "vitc": 14.7,
+    "satfat": 0.034
+   }
+  },
+  {
+   "id": "spinach_can",
+   "name": "Spinach (canned)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.844,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.6709/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11459",
+   "serving_g": 234,
+   "serving_desc": "1 cup",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 234,
+   "cap_group": null,
+   "usda_desc": "Spinach, canned, regular pack, solids and liquids",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.406526,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 19.0,
+    "protein": 2.11,
+    "carb": 2.92,
+    "fat": 0.37,
+    "fiber": 1.6,
+    "sugar": 0.33,
+    "calcium": 83.0,
+    "iron": 1.58,
+    "potassium": 230.0,
+    "sodium": 319.0,
+    "vitc": 13.5,
+    "satfat": 0.06
    }
   },
   {
@@ -3108,6 +6694,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 60,
    "cap_group": null,
    "usda_desc": "Spinach, raw",
@@ -3126,7 +6714,100 @@
     "iron": 2.71,
     "potassium": 558.0,
     "sodium": 79.0,
-    "vitc": 28.1
+    "vitc": 28.1,
+    "satfat": 0.063
+   }
+  },
+  {
+   "id": "spinach_frozen",
+   "name": "Spinach (frozen)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.518,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.4690/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11463",
+   "serving_g": 156,
+   "serving_desc": "1 cup",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 156,
+   "cap_group": null,
+   "usda_desc": "Spinach, frozen, chopped or leaf, unprepared",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.555115,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 29.0,
+    "protein": 3.63,
+    "carb": 4.21,
+    "fat": 0.57,
+    "fiber": 2.9,
+    "sugar": 0.65,
+    "calcium": 129.0,
+    "iron": 1.89,
+    "potassium": 346.0,
+    "sodium": 74.0,
+    "vitc": 5.5,
+    "satfat": 0.041
+   }
+  },
+  {
+   "id": "tomatoes_can",
+   "name": "Tomatoes (canned)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Canned (can contents), per lb (USDA ERS U.S. average)",
+   "price": 1.333,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.2082/lb x BLS CPI canned fruits and vegetables (CUUR0000SEFM01) Sep 2026 / 2023 avg = 1.1034",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11531",
+   "serving_g": 240,
+   "serving_desc": "1 cup",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 240,
+   "cap_group": null,
+   "usda_desc": "Tomatoes, red, ripe, canned, packed in tomato juice",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.293871,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 16.0,
+    "protein": 0.79,
+    "carb": 3.47,
+    "fat": 0.25,
+    "fiber": 1.9,
+    "sugar": 2.55,
+    "calcium": 33.0,
+    "iron": 0.57,
+    "potassium": 191.0,
+    "sodium": 115.0,
+    "vitc": 12.6,
+    "satfat": 0.034
    }
   },
   {
@@ -3154,6 +6835,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": 180,
    "cap_group": null,
    "usda_desc": "Tomatoes, red, ripe, raw, year round average",
@@ -3172,7 +6855,100 @@
     "iron": 0.27,
     "potassium": 237.0,
     "sodium": 5.0,
-    "vitc": 13.7
+    "vitc": 13.7,
+    "satfat": 0.028
+   }
+  },
+  {
+   "id": "turnip_greens_frozen",
+   "name": "Turnip greens (frozen)",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Frozen, per lb (USDA ERS U.S. average)",
+   "price": 2.978,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $2.9198/lb x BLS CPI frozen fruits and vegetables (CUUR0000SEFM02) Sep 2026 / 2023 avg = 1.0199; USDA lists no sugars value",
+   "bls": null,
+   "edible_yield": 1.0,
+   "ndb": "11574",
+   "serving_g": 164,
+   "serving_desc": "1 cup chopped",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 164,
+   "cap_group": null,
+   "usda_desc": "Turnip greens, frozen, unprepared",
+   "usda_refuse_pct": 0.0,
+   "usda_refuse_desc": "",
+   "cost_per_100g": 0.656526,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 22.0,
+    "protein": 2.47,
+    "carb": 3.67,
+    "fat": 0.31,
+    "fiber": 2.5,
+    "sugar": 0.0,
+    "calcium": 118.0,
+    "iron": 1.51,
+    "potassium": 184.0,
+    "sodium": 12.0,
+    "vitc": 26.8,
+    "satfat": 0.073
+   }
+  },
+  {
+   "id": "zucchini",
+   "name": "Zucchini",
+   "group": "Vegetables",
+   "type": "Vegetables",
+   "product": "Fresh, per lb (USDA ERS U.S. average)",
+   "price": 1.738,
+   "package_g": 453.6,
+   "price_note": "Estimate: USDA ERS 2023 U.S. average $1.6391/lb x BLS CPI fresh vegetables (CUUR0000SEFL) Sep 2026 / 2023 avg = 1.0603",
+   "bls": null,
+   "edible_yield": 0.95,
+   "ndb": "11477",
+   "serving_g": 124,
+   "serving_desc": "1 cup chopped",
+   "max_servings": 2,
+   "meal": [
+    0,
+    0.5,
+    0.5,
+    0
+   ],
+   "flags": [],
+   "price_source": "ers",
+   "core": false,
+   "cup_eq_g": 124,
+   "cap_group": null,
+   "usda_desc": "Squash, summer, zucchini, includes skin, raw",
+   "usda_refuse_pct": 5.0,
+   "usda_refuse_desc": "Ends",
+   "cost_per_100g": 0.403323,
+   "bls_cost_per_100g": null,
+   "per100g": {
+    "kcal": 17.0,
+    "protein": 1.21,
+    "carb": 3.11,
+    "fat": 0.32,
+    "fiber": 1.0,
+    "sugar": 2.5,
+    "calcium": 16.0,
+    "iron": 0.37,
+    "potassium": 261.0,
+    "sodium": 8.0,
+    "vitc": 17.9,
+    "satfat": 0.084
    }
   },
   {
@@ -3199,6 +6975,8 @@
    "flags": [
     "dairy"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "added_fats",
    "usda_desc": "Butter, salted",
@@ -3217,7 +6995,8 @@
     "iron": 0.02,
     "potassium": 24.0,
     "sodium": 643.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 51.368
    }
   },
   {
@@ -3242,6 +7021,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "added_fats",
    "usda_desc": "Oil, canola",
@@ -3260,7 +7041,8 @@
     "iron": 0.0,
     "potassium": 0.0,
     "sodium": 0.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 7.365
    }
   },
   {
@@ -3285,6 +7067,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "added_fats",
    "usda_desc": "Oil, olive, salad or cooking",
@@ -3303,7 +7087,8 @@
     "iron": 0.56,
     "potassium": 1.0,
     "sodium": 2.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 13.808
    }
   },
   {
@@ -3327,7 +7112,11 @@
     0,
     1
    ],
-   "flags": [],
+   "flags": [
+    "treenut"
+   ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": null,
    "usda_desc": "Nuts, almonds",
@@ -3346,7 +7135,8 @@
     "iron": 3.71,
     "potassium": 733.0,
     "sodium": 1.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 3.802
    }
   },
   {
@@ -3371,6 +7161,8 @@
     0
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": null,
    "usda_desc": "Avocados, raw, California",
@@ -3389,7 +7181,8 @@
     "iron": 0.61,
     "potassium": 507.0,
     "sodium": 8.0,
-    "vitc": 8.8
+    "vitc": 8.8,
+    "satfat": 2.126
    }
   },
   {
@@ -3421,6 +7214,8 @@
     "dairy",
     "egg"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "snacks",
    "usda_desc": "Cookies, chocolate chip, commercially prepared, regular, higher fat, enriched",
@@ -3439,7 +7234,8 @@
     "iron": 5.58,
     "potassium": 171.0,
     "sodium": 311.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 8.091
    }
   },
   {
@@ -3467,6 +7263,8 @@
     "gluten",
     "dairy"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "snacks",
    "usda_desc": "Snacks, granola bars, soft, uncoated, chocolate chip",
@@ -3485,7 +7283,8 @@
     "iron": 2.19,
     "potassium": 237.0,
     "sodium": 251.0,
-    "vitc": 0.0
+    "vitc": 0.0,
+    "satfat": 6.061
    }
   },
   {
@@ -3513,6 +7312,8 @@
     1
    ],
    "flags": [],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "snacks",
    "usda_desc": "Snacks, potato chips, plain, salted",
@@ -3531,7 +7332,8 @@
     "iron": 1.28,
     "potassium": 1196.0,
     "sodium": 527.0,
-    "vitc": 21.6
+    "vitc": 21.6,
+    "satfat": 3.4
    }
   },
   {
@@ -3561,6 +7363,8 @@
    "flags": [
     "dairy"
    ],
+   "price_source": "walmart",
+   "core": true,
    "cup_eq_g": null,
    "cap_group": "snacks",
    "usda_desc": "Ice creams, vanilla",
@@ -3579,7 +7383,8 @@
     "iron": 0.09,
     "potassium": 199.0,
     "sodium": 80.0,
-    "vitc": 0.6
+    "vitc": 0.6,
+    "satfat": 6.79
    }
   }
  ]
