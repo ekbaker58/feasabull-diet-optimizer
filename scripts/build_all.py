@@ -12,6 +12,7 @@ run('node', 'tests/run_diets.mjs')
 run('node', 'tests/stress.mjs')
 run(py, 'tests/verify_highs.py', 'tests/out/diets.json', 'tests/out/stress.json', 'tests/out/infeasible.json')
 run(py, 'scripts/build_xlsx.py')
+run(py, 'scripts/build_supabase.py')
 if shutil.which('soffice'):
     print('LibreOffice found: recalculating the workbook so cached values are stored (optional; Excel recalculates on open).')
 print('Done.')

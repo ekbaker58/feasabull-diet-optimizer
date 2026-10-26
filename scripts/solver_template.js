@@ -30,9 +30,9 @@
 const BIG = 1e9;
 const EPS = 1e-9;
 
-export function getDiet(name) {
-  const d = DIETS.find((x) => x.name.toLowerCase() === String(name || "Balanced").toLowerCase());
-  if (!d) throw new Error(`Unknown diet "${name}". Options: ${DIETS.map((x) => x.name).join(", ")}`);
+export function getDiet(name, diets = DIETS) {
+  const d = diets.find((x) => x.name.toLowerCase() === String(name || "Balanced").toLowerCase());
+  if (!d) throw new Error(`Unknown diet "${name}". Options: ${diets.map((x) => x.name).join(", ")}`);
   return d;
 }
 
@@ -54,16 +54,23 @@ export function isAllowed(food, diet, exclude = []) {
  *            sugarMax (optional), proteinMin (optional floor in g, e.g. 0.8 g/kg from the calculator) }
  * prefs:   { diet: 'Balanced'|'High-Protein'|'Low-Carb'|'Vegetarian'|'Vegan'|'Pescatarian'|'Gluten-Free'|'No Pork',
  *            exclude: [foodId], mustInclude: {foodId: servings}, maxServings: {foodId: servings},
- *            prices: {foodId: package price}, priceSource: 'walmart'|'bls', settings: {...overrides} }
+ *            prices: {foodId: package price}, priceSource: 'walmart'|'bls', settings: {...overrides},
+ *            data: { foods, diets, groupCaps, settings } — optional live data (e.g. from Supabase via supabaseData.js);
+ *                  anything omitted falls back to the data built into this file }
  */
 export function buildModel(targets, prefs = {}) {
-  const diet = getDiet(prefs.diet);
-  const S = { ...SETTINGS, ...(prefs.settings || {}) };
-  S.meal_kcal = { ...SETTINGS.meal_kcal, ...((prefs.settings || {}).meal_kcal || {}) };
+  const data = prefs.data || {};
+  const FOODS_ = data.foods || FOODS, DIETS_ = data.diets || DIETS, CAPS_ = data.groupCaps || GROUP_CAPS;
+  const BASE = { ...SETTINGS, ...(data.settings || {}) };
+  BASE.group_caps = data.groupCaps ? Object.fromEntries(CAPS_.map((g) => [g.key, g.max])) : BASE.group_caps;
+  const diet = getDiet(prefs.diet, DIETS_);
+  const S = { ...BASE, ...(prefs.settings || {}) };
+  S.meal_kcal = { ...BASE.meal_kcal, ...((prefs.settings || {}).meal_kcal || {}) };
+  S.group_caps = { ...BASE.group_caps, ...((prefs.settings || {}).group_caps || {}) };
   const kcal = Number(targets.calories);
   if (!(kcal > 0)) throw new Error("targets.calories is required");
 
-  const foods = FOODS.filter((f) => isAllowed(f, diet, prefs.exclude || []))
+  const foods = FOODS_.filter((f) => isAllowed(f, diet, prefs.exclude || []))
     .map((f) => ({ ...f, cost100: costPer100g(f, prefs) }));
   const n = foods.length;
   const keys = NUTRIENTS.map((k) => k.key);
@@ -116,7 +123,7 @@ export function buildModel(targets, prefs = {}) {
   const cupRow = (type) => foods.map((f) => (f.type === type ? 100 / f.cup_eq_g : 0));
   if (S.min_veg_cups > 0) add(cupRow("Vegetables"), ">=", S.min_veg_cups, `vegetables >= ${S.min_veg_cups} cup-eq`, "group");
   if (S.min_fruit_cups > 0) add(cupRow("Fruit"), ">=", S.min_fruit_cups, `fruit >= ${S.min_fruit_cups} cup-eq`, "group");
-  GROUP_CAPS.forEach((g) => {
+  CAPS_.forEach((g) => {
     const cap = (S.group_caps || {})[g.key];
     if (cap == null) return;
     const row = foods.map((f) => (f.cap_group !== g.key ? 0 : g.unit === "grams" ? 100 : 100 / f.serving_g));

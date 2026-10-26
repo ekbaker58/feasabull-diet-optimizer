@@ -21,6 +21,8 @@ subject to  b_min ≤ A·x ≤ b_max      nutrient targets (calories, fiber, cal
 |---|---|
 | `spreadsheet/FeasaBULL_Diet_Optimizer.xlsx` | The workbook: **Planner** (inputs + answer by meal), **Food Data** (71 foods sorted by group/type), **Diets** (8 presets), **Matrix Model** (A, M, G, c, u, x with MMULT), **Diet Comparison** (A·X for every diet + a typical day), **Optimality Proof** (B⁻¹, det, shadow prices), **Notes & Sources** |
 | `src/lib/dietOptimizer.js` | Drop-in optimizer for the Base44 site (no dependencies). `optimizeDiet(targets, prefs)` |
+| `src/lib/supabaseData.js` | Load foods/diets from Supabase into the optimizer; save and list a user's plans |
+| `supabase/` | Supabase config + migrations (tables, row level security, all food data) — see [`docs/SUPABASE.md`](docs/SUPABASE.md) |
 | `docs/BASE44_INTEGRATION.md` | Step-by-step: add the optimizer to the website + the exact prompt for Base44's AI |
 | `docs/MODEL.md` | The math, written for the report/slides |
 | `data/foods.json` | Prices, yields, servings, meal pattern, diet flags, USDA nutrients for all 71 foods |
