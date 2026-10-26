@@ -20,7 +20,10 @@ SOL = json.load(open(os.path.join(ROOT, 'tests', 'out', 'diets.json')))
 TYP = json.loads(subprocess.check_output(['node', '-e', "import('./tests/typical_day.mjs').then(m=>console.log(JSON.stringify(m.TYPICAL_DAY)))"], cwd=ROOT))
 FOODS, NUTS, DIETS, MEALS, S = D['foods'], D['nutrients'], D['diets'], D['meals'], D['settings']
 ATTRS, CAPS = D['attrs'], D['group_caps']
-NF = len(FOODS); IDS = [f['id'] for f in FOODS]; NK = [n['key'] for n in NUTS]
+NF = len(FOODS); IDS = [f['id'] for f in FOODS]; NK = [n['key'] for n in NUTS]; NCORE = sum(1 for f in FOODS if f['core'])
+DA0, DA1 = 9, 8 + len(ATTRS)                  # Diets sheet: attribute columns (forbid flags)
+DSOD, DSAT = 9 + len(ATTRS), 10 + len(ATTRS)  # Diets sheet: sodium max (mg), saturated-fat max (% kcal)
+assert NF <= 200, 'Excel Solver allows at most 200 variable cells'
 EXJ = json.load(open(os.path.join(ROOT, 'tests', 'out', 'example.json')))
 EX, EXP = EXJ['targets'], EXJ['person']
 EXF = dict(ft=5, inch=8, lb=155)   # example person as typed into the site's form (tests/example_person.mjs)
@@ -163,11 +166,14 @@ TG = [('kcal', 'Calories (kcal/day)', f'=MAX(IF({P["sex"]}="Male",\'DRI Tables\'
       ('fiber', 'Fiber at least (g) — 14 g per 1,000 kcal', 'FIB'),
       ('calcium', 'Calcium at least (mg)', dri_f('E', 'F')), ('iron', 'Iron at least (mg)', dri_f('G', 'H')),
       ('potassium', 'Potassium at least (mg)', dri_f('I', 'J')), ('vitc', 'Vitamin C at least (mg)', dri_f('C', 'D')),
-      ('sodium', 'Sodium under (mg)', 2300), ('sugar', 'Total sugars under (g, optional)', None)]
+      ('sodium', 'Sodium under (mg) — 2,300, or the diet\'s own limit', 'SOD'), ('sugar', 'Total sugars under (g, optional)', None)]
 for k, (key, lab, f) in enumerate(TG):
     r = 16 + k
     if f == 'PROT': f = f'=MIN(MAX(ROUND(1.6*{W["kg"]},0),ROUND(0.1*$C$16/4,0)),ROUND(0.3*$C$16/4,0))'
     if f == 'FIB': f = '=ROUND(14*$C$16/1000,0)'
+    if f == 'SOD':
+        dsod = f"INDEX(Diets!${L(DSOD)}$5:${L(DSOD)}${4+len(DIETS)},MATCH(Planner!$C$36,Diets!$A$5:$A${4+len(DIETS)},0))"
+        f = f'=IF({dsod}="",2300,MIN(2300,{dsod}))'
     put(PL, f'B{r}', lab, box=True)
     put(PL, f'C{r}', f, BLUE if isinstance(f, (int, float)) else BLACK, fmt='#,##0', box=True)
     put(PL, f'D{r}', None, BLUE, fmt='#,##0', box=True, fl=fill('FFFDE7'))
@@ -182,9 +188,12 @@ put(PL, 'B37', 'What it means', box=True)
 put(PL, 'C37', f"=INDEX(Diets!$B$5:$B${4+len(DIETS)},MATCH({P['diet']},Diets!$A$5:$A${4+len(DIETS)},0))", box=True, al=WRAP)
 put(PL, 'B38', 'Macro split (% of calories)', box=True)
 put(PL, 'C38', '="Protein "&TEXT(\'Matrix Model\'!$C$8,"0%")&"–"&TEXT(\'Matrix Model\'!$D$8,"0%")&", Carbs "&TEXT(\'Matrix Model\'!$C$9,"0%")&"–"&TEXT(\'Matrix Model\'!$D$9,"0%")&", Fat "&TEXT(\'Matrix Model\'!$C$10,"0%")&"–"&TEXT(\'Matrix Model\'!$D$10,"0%")', box=True)
-pin(39, 'psrc', 'Price source', 'Walmart (Oct 2026)', fmt='@', note='or "BLS U.S. average (Sep 2026)" — sensitivity check')
+pin(39, 'psrc', 'Price source', 'Walmart (Oct 2026)', fmt='@', note='or "BLS U.S. average (Sep 2026)". Added foods always use U.S. averages (see Food Data)')
 dv = DataValidation(type='list', formula1=f"=Diets!$A$5:$A${4+len(DIETS)}", allow_blank=False); PL.add_data_validation(dv); dv.add('C36')
 dv2 = DataValidation(type='list', formula1='"Walmart (Oct 2026),BLS U.S. average (Sep 2026)"'); PL.add_data_validation(dv2); dv2.add('C39')
+pin(40, 'fset', 'Food list', 'All foods', fmt='@', note=f'or "Core 71 foods" — the class baseline ($3.02 for the example person)')
+PL['C40'].fill = YELLOW
+dv3 = DataValidation(type='list', formula1='"All foods,Core 71 foods"'); PL.add_data_validation(dv3); dv3.add('C40')
 
 put(PL, 'B41', '4. BALANCE RULES  (keep amounts realistic)', bold=True, size=11)
 pin(42, 'tol', 'Calorie tolerance (±)', S['calorie_tolerance'], fmt='0%')
@@ -205,7 +214,7 @@ for g in CAPS:
 put(PL, f'B{row}', 'Per-food limits (max servings, exclusions, must-include) are on Food Data.', italic=True)
 
 # ================================================================ FOOD DATA
-FCOLS = [('num', '#', 4), ('group', 'Group', 14), ('type', 'Type', 15), ('name', 'Food', 30), ('product', 'Store product (Walmart)', 30),
+FCOLS = [('num', '#', 4), ('group', 'Group', 14), ('type', 'Type', 15), ('name', 'Food', 30), ('product', 'Product / price basis', 30),
          ('price', 'Price ($)', 9), ('pkg', 'Package as bought (g)', 11), ('yield', 'Edible yield', 8),
          ('cw', 'Walmart $ per 100 g edible', 11), ('bp', 'BLS U.S. avg price ($)', 10), ('bg', 'BLS unit (g)', 9),
          ('cb', 'BLS $ per 100 g edible', 10), ('cu', '$ per 100 g USED', 11),
@@ -215,14 +224,16 @@ FCOLS += [('blocked', 'Blocked by diet', 8), ('allowed', 'Allowed (1/0)', 8)]
 FCOLS += [(f"m_{m}", f"Meal share: {m}", 8) for m in MEALS]
 FCOLS += [('cup', 'Grams per cup-equivalent', 9), ('capg', 'Group cap', 12)]
 FCOLS += [(f"n_{n['key']}", f"{n['label']} ({n['unit']}/100 g)", 9) for n in NUTS]
+FCOLS += [('src', 'Price source', 10), ('core', 'In core 71 (1/0)', 7)]
 FCOLS += [('ppd', 'Protein per $ (g)', 9), ('kpd', 'Calories per $', 9), ('ndb', 'USDA NDB #', 8), ('udesc', 'USDA SR28 food', 46),
           ('note', 'Price / data note', 44)]
 FC = {k: L(i + 1) for i, (k, _, _) in enumerate(FCOLS)}
 FHR, F0 = 5, 6; F1 = F0 + NF - 1
 def fref(key, absolute=True): return f"'Food Data'!${FC[key]}${F0}:${FC[key]}${F1}"
 
-title(FD, 'Food Data — 71 common foods, sorted by group and type',
-      'Prices: Walmart (Oct 2026, regular price) with BLS U.S. average (Sep 2026) for reference. Nutrients: USDA SR28, per 100 g edible.')
+title(FD, f'Food Data — {NF} foods ({NCORE} core + {NF - NCORE} added), sorted by group and type',
+      'Core prices: Walmart (Oct 2026, regular price). Added foods: BLS U.S. average (Sep 2026) or USDA ERS 2023 average x BLS CPI (Sep 2026 / 2023). '
+      'BLS U.S. averages kept for reference. Nutrients: USDA SR28, per 100 g edible.')
 put(FD, 'A3', 'Blue = data you can edit (prices, servings, caps, exclusions).  Black = formulas.  Yellow = check this price.  '
     'Edible yield removes bone, peel, shells (USDA refuse %).', italic=True)
 for i, (k, h, w) in enumerate(FCOLS):
@@ -248,12 +259,14 @@ for k, f in enumerate(FOODS):
     v('ex', None, al=CENTER); v('must', None, fmt='0.0')
     for a in ATTRS: v(f"f_{a['key']}", 1 if a['key'] in f['flags'] else 0, fmt='0', al=CENTER)
     fl_rng = f"{FC['f_'+ATTRS[0]['key']]}{r}:{FC['f_'+ATTRS[-1]['key']]}{r}"
-    v('blocked', f"=SUMPRODUCT({fl_rng},INDEX(Diets!$I$5:$O${4+len(DIETS)},MATCH({P['diet']},Diets!$A$5:$A${4+len(DIETS)},0),0))", BLACK, fmt='0', al=CENTER)
-    v('allowed', f'=IF(OR(UPPER({FC["ex"]}{r})="Y",{FC["blocked"]}{r}>0),0,1)', BLACK, fmt='0', al=CENTER, bold=True)
+    v('blocked', f"=SUMPRODUCT({fl_rng},INDEX(Diets!${L(DA0)}$5:${L(DA1)}${4+len(DIETS)},MATCH({P['diet']},Diets!$A$5:$A${4+len(DIETS)},0),0))", BLACK, fmt='0', al=CENTER)
+    v('allowed', f'=IF(OR(UPPER({FC["ex"]}{r})="Y",{FC["blocked"]}{r}>0,AND({P["fset"]}="Core 71 foods",{FC["core"]}{r}=0)),0,1)', BLACK, fmt='0', al=CENTER, bold=True)
     for m, val in zip(MEALS, f['meal']): v(f"m_{m}", val, fmt='0%', al=CENTER)
     v('cup', f['cup_eq_g'], fmt='0'); v('capg', next((g['label'] for g in CAPS if g['key'] == f['cap_group']), None), BLACK)
     for n in NUTS: v(f"n_{n['key']}", f['per100g'][n['key']], fmt='0.00')
     v('ppd', f"={FC['n_protein']}{r}/{FC['cu']}{r}", BLACK, fmt='0.0'); v('kpd', f"={FC['n_kcal']}{r}/{FC['cu']}{r}", BLACK, fmt='#,##0')
+    v('src', {'walmart': 'Walmart', 'bls': 'BLS avg', 'ers': 'ERS x CPI'}[f['price_source']], BLACK)
+    v('core', 1 if f['core'] else 0, BLACK, fmt='0', al=CENTER)
     v('ndb', f['ndb'], BLACK); v('udesc', f['usda_desc'], BLACK)
     note = f['price_note']
     if f['usda_refuse_pct'] and abs((1 - f['edible_yield']) * 100 - f['usda_refuse_pct']) > 0.5:
@@ -269,18 +282,23 @@ FD[f"{FC['blocked']}{FHR}"].comment = Comment('= (food attribute row) · (select
 # ================================================================ DIETS
 title(DI, 'Diets — macro split and which food attributes each diet forbids',
       'Food j is allowed when (attribute row of food j) · (forbidden row of the diet) = 0. Edit or add diets here.')
-hd = ['Diet', 'Description', 'Protein min', 'Protein max', 'Carbs min', 'Carbs max', 'Fat min', 'Fat max'] + [f"Forbid {a['label']}" for a in ATTRS]
+hd = ['Diet', 'Description', 'Protein min', 'Protein max', 'Carbs min', 'Carbs max', 'Fat min', 'Fat max'] + [f"Forbid {a['label']}" for a in ATTRS] + ['Sodium max (mg)', 'Sat fat max (% kcal)']
 for i, h in enumerate(hd): head(DI, f'{L(i+1)}4', h)
 for k, d in enumerate(DIETS):
     r = 5 + k
     put(DI, f'A{r}', d['name'], bold=True, box=True); put(DI, f'B{r}', d['desc'], box=True, al=WRAP)
     for j, val in enumerate([*d['protein'], *d['carb'], *d['fat']]): put(DI, f'{L(3+j)}{r}', val, BLUE, fmt='0%', box=True)
     for j, a in enumerate(ATTRS): put(DI, f'{L(9+j)}{r}', 1 if a['key'] in d['forbid'] else 0, BLUE, fmt='0', box=True, al=CENTER)
+    put(DI, f'{L(DSOD)}{r}', d.get('sodium_max'), BLUE, fmt='#,##0', box=True, al=CENTER)
+    put(DI, f'{L(DSAT)}{r}', d.get('satfat_max'), BLUE, fmt='0%', box=True, al=CENTER)
 DI.column_dimensions['A'].width = 16; DI.column_dimensions['B'].width = 60
-for j in range(3, 16): DI.column_dimensions[L(j)].width = 10
+for j in range(3, DSAT + 1): DI.column_dimensions[L(j)].width = 10
 DI.row_dimensions[4].height = 40
 put(DI, f'A{6+len(DIETS)}', 'Low-Carb sets carbohydrate below the AMDR range (45–65%) on purpose; High-Protein sits at the top of the AMDR protein range.', italic=True)
 put(DI, f'A{7+len(DIETS)}', 'Diets change two things in the model: the macro rows of b_min/b_max, and the upper bounds u (a forbidden food gets u = 0).', italic=True)
+put(DI, f'A{8+len(DIETS)}', 'DASH-Style: MedlinePlus (NIH) DASH goals are saturated fat <= 6% of calories, total fat ~27%, protein ~18%, carbohydrate ~55%, '
+    'and sodium <= 2,300 mg with 1,500 mg "an even more effective goal". The three macro targets add to exactly 100%, so they are modeled as ±3-point bands.', italic=True)
+put(DI, f'A{9+len(DIETS)}', 'Allergy columns (Shellfish, Peanuts, Tree nuts, Soy) mark foods that ARE the allergen; packaged foods can still contain traces.', italic=True)
 
 # ================================================================ MATRIX MODEL
 C0 = 6                                  # first food column (F)
@@ -296,6 +314,9 @@ for i, (lab, c1, c2) in enumerate([('Protein', 'C', 'D'), ('Carbohydrate', 'E', 
     put(MM, f'B{8+i}', lab, box=True)
     put(MM, f'C{8+i}', f"=INDEX(Diets!${c1}$5:${c1}${4+len(DIETS)},{dsel})", GREEN, fmt='0%', box=True)
     put(MM, f'D{8+i}', f"=INDEX(Diets!${c2}$5:${c2}${4+len(DIETS)},{dsel})", GREEN, fmt='0%', box=True)
+put(MM, 'B11', 'Saturated fat (max only)', box=True)
+dsat = f"INDEX(Diets!${L(DSAT)}$5:${L(DSAT)}${4+len(DIETS)},{dsel})"
+put(MM, 'D11', f'=IF({dsat}="",1,{dsat})', GREEN, fmt='0%', box=True)
 
 # --- parameter rows (foods across)
 R_NAME, R_C, R_U, R_L, R_ALW = 13, 14, 15, 16, 17
@@ -360,6 +381,7 @@ G.append(('Calories ≤ target + tolerance', 'nutrient', '<=', f'={kcal}*(1+{P["
 G.append(('Protein ≤ max % of calories', 'macro', '<=', 0, macro_row('protein', 4, '$D$8')))
 G.append(('Carbs ≤ max % of calories', 'macro', '<=', 0, macro_row('carb', 4, '$D$9')))
 G.append(('Fat ≤ max % of calories', 'macro', '<=', 0, macro_row('fat', 9, '$D$10')))
+G.append(('Saturated fat ≤ max % of calories (100% = no limit)', 'macro', '<=', 0, macro_row('satfat', 9, '$D$11')))
 G.append(('Sodium ≤ maximum', 'nutrient', '<=', f'=N({P["sodium"]})', nut_row('sodium')))
 G.append(('Total sugars ≤ maximum (blank = none)', 'nutrient', '<=', f'=IF({P["sugar"]}="",1000000,{P["sugar"]})', nut_row('sugar')))
 for meal in MEALS:
@@ -448,7 +470,8 @@ tmap = {'kcal': (f'={kcal}*(1-{P["tol"]})', f'={kcal}*(1+{P["tol"]})'),
         'carb': (f"='Matrix Model'!$C$9*{pk_}/4", f"='Matrix Model'!$D$9*{pk_}/4"),
         'fat': (f"='Matrix Model'!$C$10*{pk_}/9", f"='Matrix Model'!$D$10*{pk_}/9"),
         'fiber': (f'={P["fiber"]}', None), 'sugar': (None, f'=IF({P["sugar"]}="","",{P["sugar"]})'), 'calcium': (f'={P["calcium"]}', None),
-        'iron': (f'={P["iron"]}', None), 'potassium': (f'={P["potassium"]}', None), 'sodium': (None, f'={P["sodium"]}'), 'vitc': (f'={P["vitc"]}', None)}
+        'iron': (f'={P["iron"]}', None), 'potassium': (f'={P["potassium"]}', None), 'sodium': (None, f'={P["sodium"]}'), 'vitc': (f'={P["vitc"]}', None),
+        'satfat': (None, f"=IF('Matrix Model'!$D$11>=1,\"\",'Matrix Model'!$D$11*{pk_}/9)")}
 for i, n in enumerate(NUTS):
     r = 12 + i
     put(PL, f'F{r}', f"{n['label']} ({n['unit']})", box=True)
@@ -526,14 +549,20 @@ arr(DC, f'C{NR+1}:{LC}{NR+len(NUTS)}', f"=MMULT('Matrix Model'!{FA}{R_A0}:{FZ}{R
 QR = NR + len(NUTS) + 2
 put(DC, f'A{QR}', 'Targets the plan misses (example person, each diet\'s own macro split)', bold=True, size=11)
 dnames = [d['name'] for d in DIETS] + ['Balanced']
+def dlim(col, key, default):
+    """The limit that applies to a Diet Comparison column: that diet's own value; the typical day uses the default."""
+    k = [L(3 + i) for i in range(len(cols))].index(col)
+    if k >= len(DIETS): return default
+    d = DIETS[k]
+    return d['fat'][1] if key == 'fat' else min(default, d.get(key) or default)
 checks = [('Calories in ±5%', lambda c: f'OR({c}{NR+1}<{EX["calories"]}*0.95-0.5,{c}{NR+1}>{EX["calories"]}*1.05+0.5)'),
           (f'Protein ≥ {EX["proteinMin"]} g', lambda c: f'{c}{NR+2}<{EX["proteinMin"]}-0.01'),
           (f'Fiber ≥ {EX["fiber"]} g', lambda c: f'{c}{NR+5}<{EX["fiber"]}-0.01'),
           (f'Calcium ≥ {EX["calcium"]:,} mg', lambda c: f'{c}{NR+7}<{EX["calcium"]}-0.01'),
           (f'Potassium ≥ {EX["potassium"]:,} mg', lambda c: f'{c}{NR+9}<{EX["potassium"]}-0.01'),
           (f'Vitamin C ≥ {EX["vitc"]} mg', lambda c: f'{c}{NR+11}<{EX["vitc"]}-0.01'),
-          (f'Sodium ≤ {EX["sodium"]:,} mg', lambda c: f'{c}{NR+10}>{EX["sodium"]}+0.01'),
-          ('Fat ≤ 35% of calories (AMDR; Low-Carb allows 50%)', lambda c: f'{c}{NR+4}*9>{c}{NR+1}*0.35+0.01')]
+          ('Sodium ≤ the diet\'s limit (2,300 mg; DASH-Style 1,500 mg)', lambda c: f'{c}{NR+10}>{dlim(c, "sodium_max", EX["sodium"])}+0.01'),
+          ('Fat ≤ the diet\'s max % of calories (typical day: 35%, AMDR)', lambda c: f'{c}{NR+4}*9>{c}{NR+1}*{dlim(c, "fat", 0.35)}+0.01')]
 for i, (lab, fn) in enumerate(checks):
     r = QR + 1 + i
     put(DC, f'B{r}', lab, box=True)
@@ -543,12 +572,16 @@ for i, (lab, fn) in enumerate(checks):
 DC.conditional_formatting.add(f'C{QR+1}:{LC}{QR+len(checks)}', FormulaRule(formula=[f'C{QR+1}="MISSED"'], fill=BADF, font=Font(color='C00000', bold=True)))
 IR = QR + len(checks) + 2
 put(DC, f'A{IR}', 'What this shows', bold=True, size=11)
-same = [d['name'] for d in DIETS if SOL[d['name']]['cost'] is not None and abs(SOL[d['name']]['cost'] - SOL['Balanced']['cost']) < 0.005]
+same = [d['name'] for d in DIETS if d['name'] != 'Balanced' and SOL[d['name']]['cost'] is not None and abs(SOL[d['name']]['cost'] - SOL['Balanced']['cost']) < 0.005]
+meat_g = sum(100 * x for fid, x in zip(SOL['Balanced']['foods'], SOL['Balanced']['x']) if set(FOODS[IDS.index(fid)]['flags']) & {'meat', 'poultry', 'fish'})
+veg_extra = SOL['Vegetarian']['cost'] - SOL['Balanced']['cost']
+meat_txt = ('the cheapest Balanced day contains no meat' if meat_g < 0.5 else
+            f'the Balanced answer uses only {meat_g:.1f} g of meat or poultry, and the best meatless day costs just ${veg_extra:.6f} more')
 insights = [
     f"• Example person (from the calculator): {EXP['sex']}, {EXP['age']}, {EXP['heightCm']} cm, {EXP['weightKg']} kg, {EXP['activity']}, {EXP['goal']} -> "
     f"{EX['calories']:,} kcal, protein ≥ {EX['proteinMin']} g, fiber ≥ {EX['fiber']} g.",
     f"• The optimized Balanced day costs ${SOL['Balanced']['cost']:.2f} and meets every target; the typical day costs more and misses several targets (red cells).",
-    f"• {', '.join(same)} give the same cost: at these prices the cheapest balanced day already avoids meat, so excluding it costs nothing. "
+    f"• {', '.join(same)} cost the same as Balanced (within half a cent): {meat_txt}, so excluding meat costs essentially nothing. "
     'Plant proteins (beans, peanut butter) and eggs cost far less per gram of protein than meat.',
     '• High-Protein and Low-Carb cost more because they force more protein (or fat) per calorie, which pulls in pricier foods.',
     '• Each column of X is a separate Simplex solve; A·X then evaluates every diet against every nutrient in one matrix multiplication.']
@@ -740,18 +773,28 @@ lines = [
  ('5. Food-group minimums in USDA cup-equivalents: vegetables ≥ 2.5 cups, fruit ≥ 2 cups (Dietary Guidelines, 2,000-kcal pattern).', False),
  ('', False),
  ('Assumptions and limits to state in the presentation', True),
- ('• Prices are one retailer (Walmart online, Oct 26 2026, regular non-sale prices) and vary by store. BLS U.S. averages (Sep 2026) are a sensitivity check (Planner → Price source).', False),
+ ('• Core 71 foods: one retailer (Walmart online, Oct 2026, regular non-sale prices); store prices vary. BLS U.S. averages (Sep 2026) are a sensitivity check (Planner → Price source).', False),
+ (f'• {NF - NCORE} added foods: Walmart.com blocks automated price lookups, so they use official U.S. averages: BLS Average Price Data (Sep 2026) where BLS publishes the item, '
+  'otherwise USDA ERS Fruit and Vegetable Prices (2023) x the BLS CPI-U for the same category (Sep 2026 / 2023 average). These are estimates, not shelf prices; see Price source on Food Data.', False),
+ ('• Planner → Food list = "Core 71 foods" reproduces the original class model ($3.02/day for the example person).', False),
  ('• Yellow prices on Food Data are older or undated listings — verify them before final numbers.', False),
  ('• Nutrients are USDA SR28 per 100 g of the food as bought and edible (raw meat, dry grains/beans). Small cooking losses are ignored.', False),
  ('• Edible yield converts price to $ per 100 g EDIBLE: bone-in chicken, peels and shells would otherwise look cheaper than they are.', False),
  ('• Each food has a fixed meal pattern (matrix M), so lunch and dinner share the same batch-cooked base — realistic for meal prep, but not varied.', False),
  ('• A linear program cannot force "use at least a normal portion if you use a food at all" (that needs integer variables), so plans can include small amounts (e.g. 15 g of milk).', False),
- ('• Variety across days, taste and cooking time are not in the model. Vitamin B12, vitamin D and others are not tracked.', False),
+ ('• Taste and cooking time are not in the model. The website offers variety by solving extra LPs that penalize foods already used. Vitamins A, D, B12, magnesium and zinc are not tracked.', False),
+ ('• A few USDA SR28 values are blank (mostly total sugars, plus vitamin C for dry navy beans and saturated fat for clementines); blanks count as 0.', False),
  ('• Removed from v1: flour and sugar (ingredients, not foods eaten alone — the v1 optimizer chose raw flour).', False),
  ('', False),
  ('References (APA 7)', True),
- ('U.S. Department of Agriculture, Agricultural Research Service, Nutrient Data Laboratory. (2015). USDA National Nutrient Database for Standard Reference, Release 28 [Data set]. http://www.ars.usda.gov/nea/bhnrc/ndl', False),
- ('U.S. Department of Agriculture, Agricultural Research Service. (2019). FoodData Central: SR Legacy [Data set]. https://fdc.nal.usda.gov/', False),
+ ('U.S. Department of Agriculture, Agricultural Research Service, Nutrient Data Laboratory. (2015). USDA National Nutrient Database for Standard Reference, Release 28 [Data set]. '
+  'https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/beltsville-human-nutrition-research-center/methods-and-application-of-food-composition-laboratory/mafcl-site-pages/sr11-sr28/', False),
+ ('U.S. Department of Agriculture, Agricultural Research Service. (2018). FoodData Central: SR Legacy [Data set]. https://fdc.nal.usda.gov/', False),
+ ('U.S. Department of Agriculture, Economic Research Service. (2025). Fruit and vegetable prices [Data set; 2023 retail scanner data, updated December 9, 2025]. https://www.ers.usda.gov/data-products/fruit-and-vegetable-prices', False),
+ ('U.S. Bureau of Labor Statistics. (2026). Consumer Price Index for All Urban Consumers: Fresh fruits (CUUR0000SEFK), Fresh vegetables (CUUR0000SEFL), Canned (CUUR0000SEFM01), '
+  'Frozen (CUUR0000SEFM02) and Other processed fruits and vegetables including dried (CUUR0000SEFM03), U.S. city average [Data series]. https://data.bls.gov/timeseries/CUUR0000SEFK', False),
+ ('U.S. Bureau of Labor Statistics. (n.d.). CPI: Average price data. Retrieved October 26, 2026, from https://www.bls.gov/cpi/factsheets/average-prices.htm', False),
+ ('MedlinePlus. (n.d.). High blood pressure and diet. U.S. National Library of Medicine. Retrieved October 26, 2026, from https://medlineplus.gov/ency/article/007483.htm', False),
  ('U.S. Bureau of Labor Statistics. (2026). Average retail food and energy prices, U.S. and Midwest region [Data table]. https://www.bls.gov/regions/mid-atlantic/data/averageretailfoodandenergyprices_usandmidwest_table.htm', False),
  ('Walmart Inc. (2026, October 26). Product listings for the foods in Food Data [Retail prices]. https://www.walmart.com/ and https://business.walmart.com/', False),
  ('U.S. Department of Agriculture & U.S. Department of Health and Human Services. (2020). Dietary guidelines for Americans, 2020–2025 (9th ed.). https://www.dietaryguidelines.gov/', False),

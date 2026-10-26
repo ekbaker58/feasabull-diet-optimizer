@@ -49,7 +49,7 @@ The full model is in `docs/MODEL.md`.
 ## Where each step lives
 | | Person → targets | Targets → plan |
 |---|---|---|
-| **Website** (`web/index.html`, live page) | `personTargets.js`, live as you type | `dietOptimizer.js` in the browser, ~10 ms |
+| **Website** (`web/index.html`, live page) | `personTargets.js`, live as you type | `dietOptimizer.js` in the browser, ~20 ms per plan |
 | **Spreadsheet** | Planner steps 1–2 + **DRI Tables** (formulas) | **Matrix Model** + Excel Solver (Simplex LP) |
 | **FeasaBULL site (Base44)** | its own calculator (already there) | add `dietOptimizer.js`; see `docs/BASE44_INTEGRATION.md` |
 
@@ -59,5 +59,22 @@ $3.02/day plan for the example person.
 ## Example: the site's own placeholder person
 Male, 21, 5′8″, 155 lb, Active, Maintain → 173 cm, 70.3 kg, PA 1.25 →
 **3,030 kcal, protein ≥ 112 g, fiber ≥ 42 g**, calcium 1,000 mg, iron 8 mg, potassium 3,400 mg,
-vitamin C 90 mg → cheapest Balanced plan **$3.02/day ($21.13/week)**, every target met.
+vitamin C 90 mg → cheapest Balanced plan **$2.87/day ($20.12/week)** from all 146 foods, every target met
+(**$3.02/day, $21.13/week** with the original 71-food core list).
 A typical student day of similar size costs **$6.89** and misses protein, fiber, potassium, sodium and fat limits.
+
+## Step 3 → 4: options, every diet, and a week
+The planner page does not stop at one plan. `planOptions(targets, prefs)` solves a few more LPs with the same rules
+but a different objective (D c)ᵀx, where D is a diagonal preference matrix:
+- **A · Lowest cost** (D = I);
+- **Your picks** (if you liked or banned foods): liked foods weighted 0.6, and at least one serving each when possible;
+- **Something different / Mix it up**: foods already used by earlier menus cost 1.5× more per earlier use, so the solver
+  swaps them out.
+
+For the example person (Balanced) that gives $2.87, $3.42 and $3.66 a day. `compareOptions` stacks the plans as columns
+of X and returns A·X (every nutrient for every plan) and a cosine-similarity matrix of where the calories come from.
+`compareDiets` solves every diet for the person, and `weekPlan(X, d)` turns days-per-plan d into weekly grams X·d and
+a shopping list with whole packages.
+
+Inputs on the page: the calculator fields, the diet, allergy filters, foods you like or never eat, an optional daily
+budget, and the food list (all 146 foods, or the core 71).

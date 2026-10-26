@@ -1,0 +1,3 @@
+# Netlify: publish the standalone planner page. There is no build step (web/index.html is generated and committed).
+[build]
+  publish = "web"

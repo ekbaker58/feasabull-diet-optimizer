@@ -7,7 +7,7 @@ import json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sr28 import load
 from foods_v2 import (FOODS, DIETS, MEALS, SETTINGS, NUTRIENTS, GROUP_ORDER, TYPE_ORDER, ATTRS, ATTR_LABELS,
-                      CUP_EQ_G, GROUP_CAPS)
+                      CUP_EQ_G, GROUP_CAPS, SR28_COLUMN, ALLERGENS, CPI)
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 ab, fd = load()
@@ -17,7 +17,7 @@ for f in FOODS:
     a, d = ab[f['ndb']], fd[f['ndb']]
     per100 = {}
     for key, _, _ in NUTRIENTS:
-        v = a[key]
+        v = a[SR28_COLUMN.get(key, key)]
         if v in ('', None):
             blanks.append(f"{f['id']}.{key}")
             v = 0
@@ -44,11 +44,13 @@ for f in foods:
 
 out = dict(
     version=2,
-    price_source='Walmart.com / business.walmart.com, observed October 2026 (regular, non-Rollback prices); '
-                 'BLS Average Price Data, U.S. city average, September 2026, as a reference column',
+    price_source='Core 71 foods: Walmart.com / business.walmart.com, observed October 2026 (regular, non-Rollback prices). '
+                 'Added foods: BLS Average Price Data (U.S. city average, Sep 2026) or USDA ERS Fruit and Vegetable Prices '
+                 '(2023) scaled to Sep 2026 with the BLS CPI. BLS U.S. averages are also kept as a reference column.',
     nutrient_source='USDA National Nutrient Database for Standard Reference, Release 28 (SR28)',
     nutrients=[dict(key=k, label=l, unit=u) for k, l, u in NUTRIENTS],
-    attrs=[dict(key=k, label=l) for k, l in zip(ATTRS, ATTR_LABELS)],
+    attrs=[dict(key=k, label=l) for k, l in zip(ATTRS, ATTR_LABELS)], allergens=ALLERGENS,
+    cpi={k: dict(series=v[0], label=v[1], base_2023=v[2], sep_2026=v[3]) for k, v in CPI.items()},
     meals=MEALS, diets=DIETS, settings=SETTINGS, group_caps=GROUP_CAPS, groups=GROUP_ORDER, types=TYPE_ORDER, foods=foods)
 os.makedirs(os.path.join(ROOT, 'data'), exist_ok=True)
 json.dump(out, open(os.path.join(ROOT, 'data', 'foods.json'), 'w'), indent=1)
