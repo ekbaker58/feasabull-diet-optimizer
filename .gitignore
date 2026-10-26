@@ -4,4 +4,4 @@ __pycache__/
 .DS_Store
 ~$*.xlsx
 vendor/
-tests/*.json
+tests/out/
