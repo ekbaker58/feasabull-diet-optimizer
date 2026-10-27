@@ -35,7 +35,8 @@ export function foodFromRow(r) {
 
 export function dietFromRow(r) {
   return { name: r.name, desc: r.description, protein: [num(r.protein_min), num(r.protein_max)],
-    carb: [num(r.carb_min), num(r.carb_max)], fat: [num(r.fat_min), num(r.fat_max)], forbid: r.forbid || [] };
+    carb: [num(r.carb_min), num(r.carb_max)], fat: [num(r.fat_min), num(r.fat_max)], forbid: r.forbid || [],
+    forbid_foods: r.forbid_foods || [] };
 }
 
 export function groupCapFromRow(r) {

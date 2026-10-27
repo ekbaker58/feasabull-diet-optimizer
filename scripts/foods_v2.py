@@ -108,25 +108,11 @@ TYPE_ORDER = ["Poultry", "Red Meat & Pork", "Fish & Seafood", "Eggs", "Plant Pro
 ATTRS = ["meat", "pork", "poultry", "fish", "egg", "dairy", "gluten"]
 ATTR_LABELS = ["Red meat", "Pork", "Poultry", "Fish", "Eggs", "Dairy", "Gluten"]
 
-# Diet presets: macro split (% of calories) + which attributes are not allowed
-DIETS = [
- dict(name="Balanced", desc="USDA Acceptable Macronutrient Distribution Ranges; all foods allowed",
-      protein=(0.10, 0.35), carb=(0.45, 0.65), fat=(0.20, 0.35), forbid=[]),
- dict(name="High-Protein", desc="For muscle gain: protein 25-35% of calories",
-      protein=(0.25, 0.35), carb=(0.40, 0.55), fat=(0.20, 0.30), forbid=[]),
- dict(name="Low-Carb", desc="Moderate low-carb: carbs 20-35%, fat 35-50% (below the AMDR carb range)",
-      protein=(0.20, 0.35), carb=(0.20, 0.35), fat=(0.35, 0.50), forbid=[]),
- dict(name="Vegetarian", desc="Lacto-ovo: no meat, poultry or fish",
-      protein=(0.10, 0.35), carb=(0.45, 0.65), fat=(0.20, 0.35), forbid=["meat", "pork", "poultry", "fish"]),
- dict(name="Vegan", desc="No animal products",
-      protein=(0.10, 0.35), carb=(0.45, 0.65), fat=(0.20, 0.35), forbid=["meat", "pork", "poultry", "fish", "egg", "dairy"]),
- dict(name="Pescatarian", desc="Fish and seafood, no meat or poultry",
-      protein=(0.10, 0.35), carb=(0.45, 0.65), fat=(0.20, 0.35), forbid=["meat", "pork", "poultry"]),
- dict(name="Gluten-Free", desc="No wheat, barley, rye or non-certified oats",
-      protein=(0.10, 0.35), carb=(0.45, 0.65), fat=(0.20, 0.35), forbid=["gluten"]),
- dict(name="No Pork", desc="All foods except pork",
-      protein=(0.10, 0.35), carb=(0.45, 0.65), fat=(0.20, 0.35), forbid=["pork"]),
-]
+# Diet presets now live in config/diets.json (easy to edit, no Python needed); scripts/diets.py checks them
+# and expands "no" into forbidden attributes + forbidden food ids.
+from diets import load_diets, ATTR_ALIASES
+assert list(ATTR_ALIASES) == ATTRS, "scripts/diets.py ATTR_ALIASES must list the same attributes as ATTRS"
+DIETS = load_diets(FOODS)
 
 MEALS = ["Breakfast", "Lunch", "Dinner", "Snacks"]
 

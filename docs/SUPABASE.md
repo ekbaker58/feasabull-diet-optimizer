@@ -54,5 +54,12 @@ for all 8 diets (largest difference $0.000003/day). Lowering a price in the tabl
 ## Changing data
 - **One price, quickly:** edit the row in the Supabase Table Editor. The site picks it up on the next load.
   The spreadsheet and the built-in fallback won't know, though.
-- **The proper way (keeps everything in sync):** edit `scripts/foods_v2.py`, run `python scripts/build_all.py`.
-  That regenerates the JSON, the optimizer, the workbook and the seed migration. Commit and open a PR.
+- **The proper way (keeps everything in sync):** edit `config/diets.json` (diets) or `scripts/foods_v2.py`
+  (foods, prices) and push. GitHub Actions regenerates the JSON, the optimizer, the page, the workbook and
+  `20261026193100_seed_diet_data.sql`.
+- **Getting that change into a database that already exists:** Supabase applies each migration file only once,
+  so a regenerated seed file does **not** update a live database. When you want the database updated, run
+  `python scripts/build_supabase.py --release`. It writes a new `<timestamp>_update_diet_data.sql` with the
+  same upserts (safe to re-run). Commit it and merge; the integration applies it like any migration.
+- **Deleting is manual:** removing a diet or food from the source files doesn't delete its row (saved plans may
+  still reference a diet by name). Delete it in the Table Editor if you need to.

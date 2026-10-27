@@ -1,7 +1,13 @@
 """Generate the Supabase data migration from data/foods.json (upserts, safe to re-run).
-Output: supabase/migrations/20261026193100_seed_diet_data.sql
+Output: supabase/migrations/20261026193100_seed_diet_data.sql  (the first load of the data)
+
+    python scripts/build_supabase.py --release
+also writes a NEW migration supabase/migrations/<UTC timestamp>_update_diet_data.sql with the same upserts.
+Supabase applies each migration file once and never re-runs one it has already applied, so after the database
+exists, changed prices/foods/diets only reach it through a new migration file. Make one when you want the
+database updated, commit it, and merge (see docs/SUPABASE.md).
 """
-import json, os
+import datetime, json, os, sys
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 D = json.load(open(os.path.join(ROOT, 'data', 'foods.json')))
 
@@ -39,12 +45,12 @@ out += [f"insert into public.foods ({', '.join(fcols)}) values", ",\n".join(rows
         f"on conflict (id) do update set\n  {upd},\n  updated_at = now();", ""]
 
 drows = [f"  ({q(d['name'])}, {q(d['desc'])}, {i+1}, {d['protein'][0]}, {d['protein'][1]}, {d['carb'][0]}, {d['carb'][1]}, "
-         f"{d['fat'][0]}, {d['fat'][1]}, {q(d['forbid'])})" for i, d in enumerate(D['diets'])]
-out += ["insert into public.diets (name, description, sort_order, protein_min, protein_max, carb_min, carb_max, fat_min, fat_max, forbid) values",
+         f"{d['fat'][0]}, {d['fat'][1]}, {q(d['forbid'])}, {q(d.get('forbid_foods', []))})" for i, d in enumerate(D['diets'])]
+out += ["insert into public.diets (name, description, sort_order, protein_min, protein_max, carb_min, carb_max, fat_min, fat_max, forbid, forbid_foods) values",
         ",\n".join(drows),
         "on conflict (name) do update set description = excluded.description, sort_order = excluded.sort_order,\n"
         "  protein_min = excluded.protein_min, protein_max = excluded.protein_max, carb_min = excluded.carb_min,\n"
-        "  carb_max = excluded.carb_max, fat_min = excluded.fat_min, fat_max = excluded.fat_max, forbid = excluded.forbid;", ""]
+        "  carb_max = excluded.carb_max, fat_min = excluded.fat_min, fat_max = excluded.fat_max, forbid = excluded.forbid,\n  forbid_foods = excluded.forbid_foods;", ""]
 
 grows = [f"  ({q(g['key'])}, {q(g['label'])}, {q(g['unit'])}, {g['max']}, {q(g['note'] or None)})" for g in D['group_caps']]
 out += ["insert into public.group_caps (key, label, unit, max_amount, note) values", ",\n".join(grows),
@@ -57,4 +63,10 @@ out += ["insert into public.optimizer_settings (key, value) values", ",\n".join(
 
 path = os.path.join(ROOT, 'supabase', 'migrations', '20261026193100_seed_diet_data.sql')
 open(path, 'w').write("\n".join(out))
+if '--release' in sys.argv:
+    stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d%H%M%S')
+    rel = os.path.join(ROOT, 'supabase', 'migrations', f'{stamp}_update_diet_data.sql')
+    open(rel, 'w').write("-- Data update: same upserts as 20261026193100_seed_diet_data.sql, regenerated from config/diets.json\n"
+                         "-- and scripts/foods_v2.py. Diets or foods removed from those files are NOT deleted here.\n" + "\n".join(out))
+    print('wrote release migration', rel)
 print('wrote', path, f"({len(D['foods'])} foods, {len(D['diets'])} diets, {len(D['group_caps'])} group caps, {len(S)} settings)")

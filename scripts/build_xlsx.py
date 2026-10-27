@@ -248,7 +248,10 @@ for k, f in enumerate(FOODS):
     v('ex', None, al=CENTER); v('must', None, fmt='0.0')
     for a in ATTRS: v(f"f_{a['key']}", 1 if a['key'] in f['flags'] else 0, fmt='0', al=CENTER)
     fl_rng = f"{FC['f_'+ATTRS[0]['key']]}{r}:{FC['f_'+ATTRS[-1]['key']]}{r}"
-    v('blocked', f"=SUMPRODUCT({fl_rng},INDEX(Diets!$I$5:$O${4+len(DIETS)},MATCH({P['diet']},Diets!$A$5:$A${4+len(DIETS)},0),0))", BLACK, fmt='0', al=CENTER)
+    dm = f"MATCH({P['diet']},Diets!$A$5:$A${4+len(DIETS)},0)"
+    v('blocked', f"=SUMPRODUCT({fl_rng},INDEX(Diets!$I$5:$O${4+len(DIETS)},{dm},0))"
+                 f"+ISNUMBER(SEARCH(\",\"&{FC['num']}{r}&\",\",\",\"&SUBSTITUTE(INDEX(Diets!$P$5:$P${4+len(DIETS)},{dm}),\" \",\"\")&\",\"))*1",
+      BLACK, fmt='0', al=CENTER)
     v('allowed', f'=IF(OR(UPPER({FC["ex"]}{r})="Y",{FC["blocked"]}{r}>0),0,1)', BLACK, fmt='0', al=CENTER, bold=True)
     for m, val in zip(MEALS, f['meal']): v(f"m_{m}", val, fmt='0%', al=CENTER)
     v('cup', f['cup_eq_g'], fmt='0'); v('capg', next((g['label'] for g in CAPS if g['key'] == f['cap_group']), None), BLACK)
@@ -264,20 +267,27 @@ FD.auto_filter.ref = f"A{FHR}:{FC['note']}{F1}"
 FD.conditional_formatting.add(f"A{F0}:{FC['name']}{F1}", FormulaRule(formula=[f"${FC['allowed']}{F0}=0"], font=Font(color='A6A6A6', strike=True)))
 FD[f"{FC['mx']}{FHR}"].comment = Comment('Team assumption: realistic most-per-day. Becomes the upper bound u in the model.', 'Team 9')
 FD[f"{FC['cup']}{FHR}"].comment = Comment('USDA MyPlate cup-equivalent: 1 cup raw/cooked veg or fruit, 2 cups leafy greens, 1/2 cup dried fruit, 1 cup 100% juice.', 'Team 9')
-FD[f"{FC['blocked']}{FHR}"].comment = Comment('= (food attribute row) · (selected diet\'s forbidden-attribute row). A dot product: > 0 means the diet excludes the food.', 'Team 9')
+FD[f"{FC['blocked']}{FHR}"].comment = Comment('= (food attribute row) · (selected diet\'s forbidden-attribute row) + 1 if the food # is in the diet\'s "Also excluded" list. > 0 means the diet excludes the food.', 'Team 9')
 
 # ================================================================ DIETS
 title(DI, 'Diets — macro split and which food attributes each diet forbids',
-      'Food j is allowed when (attribute row of food j) · (forbidden row of the diet) = 0. Edit or add diets here.')
-hd = ['Diet', 'Description', 'Protein min', 'Protein max', 'Carbs min', 'Carbs max', 'Fat min', 'Fat max'] + [f"Forbid {a['label']}" for a in ATTRS]
+      'Food j is allowed when (attribute row of food j) · (forbidden row of the diet) = 0 and j is not in "Also excluded". '
+      'Source: config/diets.json (edit there; this sheet is rebuilt from it).')
+hd = (['Diet', 'Description', 'Protein min', 'Protein max', 'Carbs min', 'Carbs max', 'Fat min', 'Fat max'] + [f"Forbid {a['label']}" for a in ATTRS]
+      + ['Also excluded (food # on Food Data)', 'Also excluded (names)'])
+FNUM = {f['id']: i + 1 for i, f in enumerate(FOODS)}
 for i, h in enumerate(hd): head(DI, f'{L(i+1)}4', h)
 for k, d in enumerate(DIETS):
     r = 5 + k
     put(DI, f'A{r}', d['name'], bold=True, box=True); put(DI, f'B{r}', d['desc'], box=True, al=WRAP)
     for j, val in enumerate([*d['protein'], *d['carb'], *d['fat']]): put(DI, f'{L(3+j)}{r}', val, BLUE, fmt='0%', box=True)
     for j, a in enumerate(ATTRS): put(DI, f'{L(9+j)}{r}', 1 if a['key'] in d['forbid'] else 0, BLUE, fmt='0', box=True, al=CENTER)
+    ff = d.get('forbid_foods', [])
+    put(DI, f'P{r}', ','.join(str(FNUM[i]) for i in ff) or None, BLUE, box=True, al=WRAP)
+    put(DI, f'Q{r}', '; '.join(f['name'] for f in FOODS if f['id'] in ff) or None, BLACK, box=True, al=WRAP)
 DI.column_dimensions['A'].width = 16; DI.column_dimensions['B'].width = 60
 for j in range(3, 16): DI.column_dimensions[L(j)].width = 10
+DI.column_dimensions['P'].width = 18; DI.column_dimensions['Q'].width = 40
 DI.row_dimensions[4].height = 40
 put(DI, f'A{6+len(DIETS)}', 'Low-Carb sets carbohydrate below the AMDR range (45–65%) on purpose; High-Protein sits at the top of the AMDR protein range.', italic=True)
 put(DI, f'A{7+len(DIETS)}', 'Diets change two things in the model: the macro rows of b_min/b_max, and the upper bounds u (a forbidden food gets u = 0).', italic=True)

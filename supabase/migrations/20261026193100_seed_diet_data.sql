@@ -111,18 +111,19 @@ on conflict (id) do update set
   vitc = excluded.vitc,
   updated_at = now();
 
-insert into public.diets (name, description, sort_order, protein_min, protein_max, carb_min, carb_max, fat_min, fat_max, forbid) values
-  ('Balanced', 'USDA Acceptable Macronutrient Distribution Ranges; all foods allowed', 1, 0.1, 0.35, 0.45, 0.65, 0.2, 0.35, '{}'::text[]),
-  ('High-Protein', 'For muscle gain: protein 25-35% of calories', 2, 0.25, 0.35, 0.4, 0.55, 0.2, 0.3, '{}'::text[]),
-  ('Low-Carb', 'Moderate low-carb: carbs 20-35%, fat 35-50% (below the AMDR carb range)', 3, 0.2, 0.35, 0.2, 0.35, 0.35, 0.5, '{}'::text[]),
-  ('Vegetarian', 'Lacto-ovo: no meat, poultry or fish', 4, 0.1, 0.35, 0.45, 0.65, 0.2, 0.35, array['meat','pork','poultry','fish']::text[]),
-  ('Vegan', 'No animal products', 5, 0.1, 0.35, 0.45, 0.65, 0.2, 0.35, array['meat','pork','poultry','fish','egg','dairy']::text[]),
-  ('Pescatarian', 'Fish and seafood, no meat or poultry', 6, 0.1, 0.35, 0.45, 0.65, 0.2, 0.35, array['meat','pork','poultry']::text[]),
-  ('Gluten-Free', 'No wheat, barley, rye or non-certified oats', 7, 0.1, 0.35, 0.45, 0.65, 0.2, 0.35, array['gluten']::text[]),
-  ('No Pork', 'All foods except pork', 8, 0.1, 0.35, 0.45, 0.65, 0.2, 0.35, array['pork']::text[])
+insert into public.diets (name, description, sort_order, protein_min, protein_max, carb_min, carb_max, fat_min, fat_max, forbid, forbid_foods) values
+  ('Balanced', 'USDA Acceptable Macronutrient Distribution Ranges; all foods allowed', 1, 0.1, 0.35, 0.45, 0.65, 0.2, 0.35, '{}'::text[], '{}'::text[]),
+  ('High-Protein', 'For muscle gain: protein 25-35% of calories', 2, 0.25, 0.35, 0.4, 0.55, 0.2, 0.3, '{}'::text[], '{}'::text[]),
+  ('Low-Carb', 'Moderate low-carb: carbs 20-35%, fat 35-50% (below the AMDR carb range)', 3, 0.2, 0.35, 0.2, 0.35, 0.35, 0.5, '{}'::text[], '{}'::text[]),
+  ('Vegetarian', 'Lacto-ovo: no meat, poultry or fish', 4, 0.1, 0.35, 0.45, 0.65, 0.2, 0.35, array['meat','pork','poultry','fish']::text[], '{}'::text[]),
+  ('Vegan', 'No animal products', 5, 0.1, 0.35, 0.45, 0.65, 0.2, 0.35, array['meat','pork','poultry','fish','egg','dairy']::text[], '{}'::text[]),
+  ('Pescatarian', 'Fish and seafood, no meat or poultry', 6, 0.1, 0.35, 0.45, 0.65, 0.2, 0.35, array['meat','pork','poultry']::text[], '{}'::text[]),
+  ('Gluten-Free', 'No wheat, barley, rye or non-certified oats', 7, 0.1, 0.35, 0.45, 0.65, 0.2, 0.35, array['gluten']::text[], '{}'::text[]),
+  ('No Pork', 'All foods except pork', 8, 0.1, 0.35, 0.45, 0.65, 0.2, 0.35, array['pork']::text[], '{}'::text[])
 on conflict (name) do update set description = excluded.description, sort_order = excluded.sort_order,
   protein_min = excluded.protein_min, protein_max = excluded.protein_max, carb_min = excluded.carb_min,
-  carb_max = excluded.carb_max, fat_min = excluded.fat_min, fat_max = excluded.fat_max, forbid = excluded.forbid;
+  carb_max = excluded.carb_max, fat_min = excluded.fat_min, fat_max = excluded.fat_max, forbid = excluded.forbid,
+  forbid_foods = excluded.forbid_foods;
 
 insert into public.group_caps (key, label, unit, max_amount, note) values
   ('meat_fish', 'Meat, poultry & fish', 'grams', 340, '12 oz raw (~9 oz cooked) per day'),

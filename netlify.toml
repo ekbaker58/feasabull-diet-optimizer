@@ -1,0 +1,16 @@
+# Netlify: connect this repo (Add new site -> Import from GitHub). No settings to fill in; this file sets them.
+# Netlify rebuilds the page from config/diets.json + the data on every push, and refuses to publish if a diet is
+# invalid or has no possible plan, so the live site keeps its last good version.
+[build]
+  publish = "web"
+  command = "bash scripts/fetch_usda.sh && python3 scripts/build_data.py && python3 scripts/build_js.py && python3 scripts/build_web.py && node tests/run_diets.mjs"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# web/app.html is the template (it needs the build step); send visitors to the built page
+[[redirects]]
+  from = "/app.html"
+  to = "/"
+  status = 301
+  force = true

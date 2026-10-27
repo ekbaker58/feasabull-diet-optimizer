@@ -19,3 +19,11 @@ for (const d of DIETS) {
 }
 writeFileSync(new URL('./out/diets.json', import.meta.url), JSON.stringify(out));
 writeFileSync(new URL('./out/example.json', import.meta.url), JSON.stringify({ person: EXAMPLE_PERSON, targets: EXAMPLE }));
+// Every diet in config/diets.json must give a plan for the example person, or the site would show "no plan" for it.
+const bad = Object.entries(out).filter(([, r]) => r.status !== 'optimal');
+if (bad.length) {
+  console.error(`\nFAIL: ${bad.length} diet(s) in config/diets.json have no possible plan for the example person:`);
+  for (const [name, r] of bad) console.error(`  - ${name}: ${(r.reasons || []).join(' ')}`);
+  console.error('Widen the macro ranges or exclude fewer foods (see docs/ADD_A_DIET.md).');
+  process.exit(1);
+}

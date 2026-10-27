@@ -52,12 +52,13 @@ create table if not exists public.diets (
   protein_min  numeric not null, protein_max numeric not null,
   carb_min     numeric not null, carb_max    numeric not null,
   fat_min      numeric not null, fat_max     numeric not null,
-  forbid       text[] not null default '{}',
+  forbid       text[] not null default '{}',   -- food attributes the diet excludes (meat, pork, poultry, fish, egg, dairy, gluten)
+  forbid_foods text[] not null default '{}',   -- individual food ids the diet excludes (from its "no" list in config/diets.json)
   constraint macro_ranges_valid check (
     protein_min <= protein_max and carb_min <= carb_max and fat_min <= fat_max
     and protein_min + carb_min + fat_min <= 1 and protein_max + carb_max + fat_max >= 1)
 );
-comment on table public.diets is 'Diet presets: macro split as fractions of calories, and the food flags each diet forbids.';
+comment on table public.diets is 'Diet presets (source: config/diets.json): macro split as fractions of calories, the food flags each diet forbids, and individual foods it excludes.';
 
 -- ---------------------------------------------------------------- group caps and settings
 create table if not exists public.group_caps (

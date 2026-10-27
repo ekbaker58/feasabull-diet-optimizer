@@ -111,7 +111,9 @@
     0.2,
     0.35
    ],
-   "forbid": []
+   "forbid": [],
+   "forbid_foods": [],
+   "no": []
   },
   {
    "name": "High-Protein",
@@ -128,7 +130,9 @@
     0.2,
     0.3
    ],
-   "forbid": []
+   "forbid": [],
+   "forbid_foods": [],
+   "no": []
   },
   {
    "name": "Low-Carb",
@@ -145,7 +149,9 @@
     0.35,
     0.5
    ],
-   "forbid": []
+   "forbid": [],
+   "forbid_foods": [],
+   "no": []
   },
   {
    "name": "Vegetarian",
@@ -164,6 +170,13 @@
    ],
    "forbid": [
     "meat",
+    "pork",
+    "poultry",
+    "fish"
+   ],
+   "forbid_foods": [],
+   "no": [
+    "red meat",
     "pork",
     "poultry",
     "fish"
@@ -191,6 +204,15 @@
     "fish",
     "egg",
     "dairy"
+   ],
+   "forbid_foods": [],
+   "no": [
+    "red meat",
+    "pork",
+    "poultry",
+    "fish",
+    "eggs",
+    "dairy"
    ]
   },
   {
@@ -212,6 +234,12 @@
     "meat",
     "pork",
     "poultry"
+   ],
+   "forbid_foods": [],
+   "no": [
+    "red meat",
+    "pork",
+    "poultry"
    ]
   },
   {
@@ -231,6 +259,10 @@
    ],
    "forbid": [
     "gluten"
+   ],
+   "forbid_foods": [],
+   "no": [
+    "gluten"
    ]
   },
   {
@@ -249,6 +281,10 @@
     0.35
    ],
    "forbid": [
+    "pork"
+   ],
+   "forbid_foods": [],
+   "no": [
     "pork"
    ]
   }

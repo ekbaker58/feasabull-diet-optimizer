@@ -45,7 +45,9 @@ export const DIETS = [
    0.2,
    0.35
   ],
-  "forbid": []
+  "forbid": [],
+  "forbid_foods": [],
+  "no": []
  },
  {
   "name": "High-Protein",
@@ -62,7 +64,9 @@ export const DIETS = [
    0.2,
    0.3
   ],
-  "forbid": []
+  "forbid": [],
+  "forbid_foods": [],
+  "no": []
  },
  {
   "name": "Low-Carb",
@@ -79,7 +83,9 @@ export const DIETS = [
    0.35,
    0.5
   ],
-  "forbid": []
+  "forbid": [],
+  "forbid_foods": [],
+  "no": []
  },
  {
   "name": "Vegetarian",
@@ -98,6 +104,13 @@ export const DIETS = [
   ],
   "forbid": [
    "meat",
+   "pork",
+   "poultry",
+   "fish"
+  ],
+  "forbid_foods": [],
+  "no": [
+   "red meat",
    "pork",
    "poultry",
    "fish"
@@ -125,6 +138,15 @@ export const DIETS = [
    "fish",
    "egg",
    "dairy"
+  ],
+  "forbid_foods": [],
+  "no": [
+   "red meat",
+   "pork",
+   "poultry",
+   "fish",
+   "eggs",
+   "dairy"
   ]
  },
  {
@@ -146,6 +168,12 @@ export const DIETS = [
    "meat",
    "pork",
    "poultry"
+  ],
+  "forbid_foods": [],
+  "no": [
+   "red meat",
+   "pork",
+   "poultry"
   ]
  },
  {
@@ -165,6 +193,10 @@ export const DIETS = [
   ],
   "forbid": [
    "gluten"
+  ],
+  "forbid_foods": [],
+  "no": [
+   "gluten"
   ]
  },
  {
@@ -183,6 +215,10 @@ export const DIETS = [
    0.35
   ],
   "forbid": [
+   "pork"
+  ],
+  "forbid_foods": [],
+  "no": [
    "pork"
   ]
  }
@@ -368,7 +404,14 @@ export const FOODS = [
 const BIG = 1e9;
 const EPS = 1e-9;
 
+/** A diet by name (from config/diets.json, or the live list passed as `diets`), or pass a diet object to try a
+ *  custom one without rebuilding:
+ *  { name, desc, protein: [0.10, 0.35], carb: [0.45, 0.65], fat: [0.20, 0.35], forbid: ["pork"], forbid_foods: ["almonds"] } */
 export function getDiet(name, diets = DIETS) {
+  if (name && typeof name === "object") {   // missing macro ranges fall back to Balanced's
+    const base = diets.find((x) => x.name === "Balanced") || {};
+    return { protein: base.protein, carb: base.carb, fat: base.fat, name: "Custom", desc: "", forbid: [], forbid_foods: [], ...name };
+  }
   const d = diets.find((x) => x.name.toLowerCase() === String(name || "Balanced").toLowerCase());
   if (!d) throw new Error(`Unknown diet "${name}". Options: ${diets.map((x) => x.name).join(", ")}`);
   return d;
@@ -382,15 +425,15 @@ export function costPer100g(food, { prices = {}, priceSource = "walmart" } = {})
 }
 
 export function isAllowed(food, diet, exclude = []) {
-  if (exclude.includes(food.id)) return false;
-  return !food.flags.some((f) => diet.forbid.includes(f));
+  if (exclude.includes(food.id) || (diet.forbid_foods || []).includes(food.id)) return false;
+  return !food.flags.some((f) => (diet.forbid || []).includes(f));
 }
 
 /**
  * Build the LP.
  * targets: { calories, fiber, calcium, iron, potassium, vitc (daily minimums), sodium (daily maximum),
  *            sugarMax (optional), proteinMin (optional floor in g, e.g. 0.8 g/kg from the calculator) }
- * prefs:   { diet: 'Balanced'|'High-Protein'|'Low-Carb'|'Vegetarian'|'Vegan'|'Pescatarian'|'Gluten-Free'|'No Pork',
+ * prefs:   { diet: a diet name from config/diets.json (DIETS), or a diet object (see getDiet),
  *            exclude: [foodId], mustInclude: {foodId: servings}, maxServings: {foodId: servings},
  *            prices: {foodId: package price}, priceSource: 'walmart'|'bls', settings: {...overrides},
  *            data: { foods, diets, groupCaps, settings } — optional live data (e.g. from Supabase via supabaseData.js);
