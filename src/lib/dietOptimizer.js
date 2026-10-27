@@ -221,6 +221,31 @@ export const DIETS = [
   "no": [
    "pork"
   ]
+ },
+ {
+  "name": "Nut-Free",
+  "desc": "No peanuts or tree nuts",
+  "protein": [
+   0.1,
+   0.35
+  ],
+  "carb": [
+   0.45,
+   0.65
+  ],
+  "fat": [
+   0.2,
+   0.35
+  ],
+  "forbid": [],
+  "forbid_foods": [
+   "peanut_butter",
+   "almonds"
+  ],
+  "no": [
+   "peanut_butter",
+   "almonds"
+  ]
  }
 ];
 export const SETTINGS = {
