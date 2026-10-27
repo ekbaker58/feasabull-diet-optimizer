@@ -8,7 +8,7 @@
 | **A** | 11 × 71 | nutrients per 100 g (USDA SR28): rows = calories, protein, carbs, fat, fiber, sugars, calcium, iron, potassium, sodium, vitamin C |
 | **M** | 71 × 4 | meal matrix: share of food *j* eaten at breakfast, lunch, dinner, snacks (rows sum to 1) |
 | **F** | 71 × 7 | food attribute matrix (red meat, pork, poultry, fish, eggs, dairy, gluten), 0/1 |
-| **f_d** | 7 × 1 | attributes a diet forbids, 0/1 |
+| **f_d** | 7 × 1 | attributes a diet forbids, 0/1 (plus a list of individual foods it excludes; both set u_j = 0). Diets are defined in `config/diets.json` |
 | **u** | 71 × 1 | portion caps (serving × max servings ÷ 100); u_j = 0 when (F·f_d)_j > 0 |
 
 ## The linear program

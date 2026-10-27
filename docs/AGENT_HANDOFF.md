@@ -52,7 +52,9 @@ pip install --break-system-packages openpyxl numpy scipy highspy
 npm test
 ```
 `npm test` must report all of the following:
+- `scripts/diets.py`: config/diets.json is valid; `tests/test_diets_config.py`: 9 bad configs rejected.
 - `tests/person_targets.test.mjs`: 81 people, 0 mismatches.
+- `tests/diets.test.mjs`: diet mechanics OK (food-level exclusions, custom diet objects).
 - `run_diets.mjs`: all 8 diets optimal.
 - `stress.mjs`: 300 random cases plus 3 impossible ones, handled correctly.
 - `verify_highs.py`: 0 mismatches against HiGHS.
@@ -61,16 +63,15 @@ npm test
 
 Full rebuild after changing data or code:
 ```bash
-python scripts/build_all.py                    # data -> js -> web -> tests -> xlsx -> supabase seed
-python <path-to-xlsx-skill>/scripts/recalc.py spreadsheet/FeasaBULL_Diet_Optimizer.xlsx 180
+python scripts/build_all.py                    # diets check -> data -> js -> web -> tests -> xlsx -> LibreOffice recalc
 ```
-- The recalc script uses LibreOffice headless. Find it with `find / -name recalc.py -path "*xlsx*"`.
-- If there is no xlsx skill, install LibreOffice (`apt-get install -y libreoffice-calc`) and recalculate with a headless macro.
+`scripts/recalc_xlsx.py` (called by `build_all.py` when LibreOffice is installed) recalculates the workbook and fails on any formula error.
+- Install LibreOffice if it is missing: `apt-get install -y libreoffice-calc`.
 - The workbook must recalculate with **0 errors**. openpyxl writes formulas without cached values, so an un-recalculated file shows blanks in some viewers.
 
 ## 2. Rules (hard)
-1. **Food data and prices** are edited only in `scripts/foods_v2.py`. Then rebuild.
-2. **Generated files:** never hand-edit `src/lib/dietOptimizer.js`, `data/foods.json`, `web/index.html`, `web/artifact.html` or `supabase/migrations/*_seed_diet_data.sql`. Edit the generator instead:
+1. **Diets** are edited only in `config/diets.json` (guide: `docs/ADD_A_DIET.md`). **Food data and prices** only in `scripts/foods_v2.py`. Then rebuild. Pushing is enough: `.github/workflows/build.yml` rebuilds and commits the generated files.
+2. **Generated files:** never hand-edit `src/lib/dietOptimizer.js`, `data/foods.json`, `web/index.html`, `web/artifact.html`, `docs/FOOD_LIST.md` or `supabase/migrations/*_seed_diet_data.sql`. Edit the generator instead:
    - `scripts/solver_template.js` + `scripts/build_js.py`
    - `web/app.html` + `scripts/build_web.py`
    - `scripts/build_supabase.py` (supabase-setup branch only)
@@ -205,24 +206,20 @@ python <path-to-xlsx-skill>/scripts/recalc.py spreadsheet/FeasaBULL_Diet_Optimiz
 
 **Acceptance criteria:** the PR lists old price → new price with source and date for each item.
 
-### TASK 4 — Host the planner page
-- **Options:**
-  - GitHub Pages on a private repo needs GitHub Pro. Ethan, as a USF student, can get Pro free through the GitHub Student Developer Pack; tell him that.
-  - Vercel or Netlify (free) also work.
-- **You cannot create accounts or sign in for him.** Prepare everything else:
-  - A `netlify.toml` or `vercel.json` that serves `web/` (publish dir `web`, no build step, `index.html` at the root).
-  - A short "Deploy" section in the README with click-by-click steps.
-- **Acceptance:** after Ethan connects his account, a deploy needs zero code changes, and the README documents the final URL slot.
+### TASK 4 — Host the planner page (config done; needs Ethan's account)
+- **Done:**
+  - `netlify.toml` builds `web/` from source on Netlify and refuses to deploy an impossible diet.
+  - `.github/workflows/build.yml` has a GitHub Pages job that is skipped until the repo variable `PAGES` = `true`.
+- **Left for Ethan:** connect one of them (README → "See the website"). GitHub Pages on a private repo needs GitHub Pro (free with the Student Developer Pack).
+- **You:** after it's live, put the URL in the README, check the example person shows 3,030 kcal and $3.02/day, and check the layout at 375 px width.
 
-### TASK 5 — GitHub Actions CI
-- **Add** `.github/workflows/test.yml`. On every pull request and every push to main, it should:
-  - Check out the repo.
-  - Set up Node 20 and Python 3.11.
-  - `pip install openpyxl numpy scipy highspy`.
-  - `bash scripts/fetch_usda.sh`.
-  - `npm test`.
-- **Also fail the build** if a generated file is stale: run `python scripts/build_data.py && python scripts/build_js.py && python scripts/build_web.py`, then `git diff --exit-code`.
-- **Note:** pushing workflow files requires a token with `workflow` scope. If the push is refused, put the file in the PR description and tell Ethan to add it in the GitHub web UI.
+### TASK 5 — GitHub Actions CI (done; verify)
+- **Done:** `.github/workflows/build.yml` runs on every push.
+  - It checks `config/diets.json`, runs `scripts/build_all.py` (all tests, the HiGHS check, the workbook build and the LibreOffice recalc), then commits regenerated files back to the same branch.
+  - The workbook is only re-committed if its content changed (`scripts/same_xlsx.py`).
+- **You:**
+  - Confirm the first run on `main` is green, and that a test edit to `config/diets.json` on a branch produces a bot commit.
+  - If the workflow file never reached GitHub (pushing it needs a token with `workflow` scope), tell Ethan to create it in the GitHub web UI from the copy in this repo.
 
 ### TASK 6 — Variety (research branch `variety`, optional; keep the base LP as the class demo)
 Lunch and dinner are identical, and some amounts are tiny. Possible fixes:

@@ -30,7 +30,13 @@
 const BIG = 1e9;
 const EPS = 1e-9;
 
+/** A diet by name (from config/diets.json), or pass a diet object to try a custom one without rebuilding:
+ *  { name, desc, protein: [0.10, 0.35], carb: [0.45, 0.65], fat: [0.20, 0.35], forbid: ["pork"], forbid_foods: ["almonds"] } */
 export function getDiet(name) {
+  if (name && typeof name === "object") {   // missing macro ranges fall back to Balanced's
+    const base = DIETS.find((x) => x.name === "Balanced") || {};
+    return { protein: base.protein, carb: base.carb, fat: base.fat, name: "Custom", desc: "", forbid: [], forbid_foods: [], ...name };
+  }
   const d = DIETS.find((x) => x.name.toLowerCase() === String(name || "Balanced").toLowerCase());
   if (!d) throw new Error(`Unknown diet "${name}". Options: ${DIETS.map((x) => x.name).join(", ")}`);
   return d;
@@ -44,15 +50,15 @@ export function costPer100g(food, { prices = {}, priceSource = "walmart" } = {})
 }
 
 export function isAllowed(food, diet, exclude = []) {
-  if (exclude.includes(food.id)) return false;
-  return !food.flags.some((f) => diet.forbid.includes(f));
+  if (exclude.includes(food.id) || (diet.forbid_foods || []).includes(food.id)) return false;
+  return !food.flags.some((f) => (diet.forbid || []).includes(f));
 }
 
 /**
  * Build the LP.
  * targets: { calories, fiber, calcium, iron, potassium, vitc (daily minimums), sodium (daily maximum),
  *            sugarMax (optional), proteinMin (optional floor in g, e.g. 0.8 g/kg from the calculator) }
- * prefs:   { diet: 'Balanced'|'High-Protein'|'Low-Carb'|'Vegetarian'|'Vegan'|'Pescatarian'|'Gluten-Free'|'No Pork',
+ * prefs:   { diet: a diet name from config/diets.json (DIETS), or a diet object (see getDiet),
  *            exclude: [foodId], mustInclude: {foodId: servings}, maxServings: {foodId: servings},
  *            prices: {foodId: package price}, priceSource: 'walmart'|'bls', settings: {...overrides} }
  */

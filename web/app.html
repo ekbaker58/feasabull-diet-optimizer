@@ -241,7 +241,8 @@ function servingText(item) {
 function render() {
   const { form, prefs, coef } = readForm();
   const d = DIETS.find((x) => x.name === prefs.diet);
-  $("diet-desc").textContent = d ? d.desc : "";
+  const nAllowed = d ? FOODS.filter((f) => isAllowed(f, d)).length : FOODS.length;
+  $("diet-desc").textContent = d ? `${d.desc} · ${nAllowed} of ${FOODS.length} foods` : "";
   $("excl-count").textContent = prefs.exclude.length ? `(${prefs.exclude.length})` : "";
   const { errors, person } = personFromForm(form);
   const errs = Object.values(errors);

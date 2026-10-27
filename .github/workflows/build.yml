@@ -1,0 +1,84 @@
+# Rebuild + test on every push, then commit the regenerated files back to the same branch.
+# A teammate edits config/diets.json (or anything else), pushes, and ~3 minutes later the branch has the updated
+# optimizer (src/lib/dietOptimizer.js), web page (web/index.html), food list (docs/FOOD_LIST.md) and spreadsheet.
+# If a diet is invalid or has no possible plan, this run fails (red X) and nothing is committed: read the log.
+name: Rebuild and test
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:                       # one run per branch at a time; later pushes wait, then build the newest commit
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}   # branch tip, so a queued run includes the previous run's commit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Python packages
+        run: pip install openpyxl numpy scipy highspy
+      - name: Install LibreOffice (recalculates the spreadsheet)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends libreoffice-calc
+      - name: Download USDA SR28
+        run: bash scripts/fetch_usda.sh
+      - name: Check config/diets.json
+        run: python scripts/diets.py
+      - name: Build and test everything
+        run: python scripts/build_all.py
+      - name: Commit regenerated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          X=spreadsheet/FeasaBULL_Diet_Optimizer.xlsx
+          # the workbook's bytes change every build (timestamps); only keep it if its content changed
+          if git cat-file -e HEAD:$X 2>/dev/null; then
+            git show HEAD:$X > "$RUNNER_TEMP/old.xlsx"
+            python scripts/same_xlsx.py "$RUNNER_TEMP/old.xlsx" $X && git checkout -- $X || true
+          fi
+          git add -A data src web spreadsheet docs/FOOD_LIST.md
+          if [ -d supabase ]; then git add -A supabase; fi
+          if git diff --cached --quiet; then
+            echo "Generated files were already up to date."
+          else
+            git commit -m "Rebuild generated files (automatic, from ${GITHUB_SHA::7})"
+            git push || echo "The branch moved during the build; the run for the newer push rebuilds it."
+          fi
+
+  # Optional: publish web/ to GitHub Pages. Turn on in repo Settings -> Pages (Source: GitHub Actions; private
+  # repos need GitHub Pro, free with the GitHub Student Developer Pack), then add a repository variable PAGES = true
+  # (Settings -> Secrets and variables -> Actions -> Variables). Until then this job is skipped.
+  pages:
+    needs: build
+    if: vars.PAGES == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deploy
+        uses: actions/deploy-pages@v4
