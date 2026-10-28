@@ -116,21 +116,133 @@ DIETS = load_diets(FOODS)
 
 MEALS = ["Breakfast", "Lunch", "Dinner", "Snacks"]
 
-# Grams per USDA "cup-equivalent" (MyPlate), used for the vegetable and fruit minimums.
-# 1 cup raw/cooked vegetable or fruit = 1 cup-eq; 2 cups raw leafy greens = 1; 1/2 cup dried fruit = 1; 1 cup 100% juice = 1.
-CUP_EQ_G = dict(broccoli=91, carrots=128, spinach=60, romaine=94, tomatoes=180, onions=160, bell_pepper=149,
-                mixed_veg=136, green_beans=235,   # canned: 1 cup drained ~ 235 g of can contents (solids + liquid basis)
+# ---------------------------------------------------------------------------------------------------------------
+# AS EATEN. Nobody eats dry rice or raw chicken, so the model works in grams AS EATEN. For foods that are cooked or
+# drained first, nutrients come from the USDA SR28 entry for the cooked/drained form, and
+#     cook_yield = grams as eaten per gram as bought (edible part)
+# is a mass balance between the two USDA entries: min(kcal_raw / kcal_cooked, protein_raw / protein_cooked).
+# Energy and protein are conserved by cooking in water, so either ratio estimates the weight change; taking the
+# smaller one is conservative (fewer cooked grams per dollar). 'yield' overrides it where USDA lists a measured yield.
+# id: (NDB of the eaten form, name as eaten, serving grams as eaten, serving label, measured yield or None, source)
+AS_EATEN = dict(
+    white_rice=("20045", "White rice, cooked", 79, "1/2 cup cooked", None, ""),
+    brown_rice=("20037", "Brown rice, cooked", 101, "1/2 cup cooked", None, ""),
+    quinoa=("20137", "Quinoa, cooked", 92.5, "1/2 cup cooked", None, ""),
+    oats=("08121", "Oatmeal (made with water)", 117, "1/2 cup cooked", None, ""),
+    spaghetti=("20121", "Spaghetti, cooked", 62, "1/2 cup cooked", None, ""),
+    ww_pasta=("20125", "Whole-wheat spaghetti, cooked", 58.5, "1/2 cup cooked", None, ""),
+    lentils=("16070", "Lentils, cooked", 99, "1/2 cup cooked", None, ""),
+    pinto_beans=("16043", "Pinto beans, cooked", 85.5, "1/2 cup cooked", None, ""),
+    chicken_breast=("05064", "Chicken breast, roasted", 85, "3 oz cooked", None, ""),
+    chicken_thigh=("05098", "Chicken thighs, roasted", 85, "3 oz cooked", None, ""),
+    drumsticks=("05069", "Chicken drumsticks, roasted (meat & skin)", 85, "3 oz cooked (about 1 drumstick)", None, ""),
+    ground_turkey=("05666", "Ground turkey 93/7, cooked", 85, "3 oz cooked", None, ""),
+    ground_beef=("23575", "Ground beef 80/20, cooked", 85, "3 oz cooked", None, ""),
+    lean_beef=("23476", "Ground beef 93/7, cooked", 85, "3 oz cooked", None, ""),
+    sirloin=("13932", "Top sirloin steak, broiled", 85, "3 oz cooked", None, ""),
+    pork_chops=("10189", "Pork loin chops, pan-cooked", 85, "3 oz cooked", None, ""),
+    bacon=("10862", "Bacon, cooked", 11.5, "1 slice cooked", None, ""),
+    salmon=("15237", "Salmon, baked", 85, "3 oz cooked", None, ""),
+    tilapia=("15262", "Tilapia, baked", 85, "3 oz cooked", None, ""),
+    shrimp=("15151", "Shrimp, cooked", 85, "3 oz cooked", None, ""),
+    potatoes=("11674", "Baked potato (with skin)", 173, "1 medium potato", None, ""),
+    sweet_potatoes=("11508", "Baked sweet potato", 100, "1/2 cup", None, ""),
+    broccoli=("11095", "Broccoli, cooked (from frozen)", 92, "1/2 cup cooked", 250 / 283.5,
+              "USDA SR28: a 10 oz package yields 250 g cooked"),
+    corn=("11179", "Corn, cooked (from frozen)", 82.5, "1/2 cup cooked", 284 / 283.5,
+          "USDA SR28: a 10 oz package yields 284 g cooked"),
+    mixed_veg=("11584", "Mixed vegetables, cooked (from frozen)", 91, "1/2 cup cooked", 275 / 283.5,
+               "USDA SR28: a 10 oz package yields 275 g cooked"),
+    green_beans=("11056", "Green beans (canned, drained)", 135, "1 cup drained", None, ""),
+)
+
+# Grams per USDA cup-equivalent, AS EATEN: 1 cup raw or cooked vegetable/fruit; 2 cups raw leafy greens;
+# 1/2 cup dried fruit; 1 cup 100% juice. Cooked weights from USDA SR28 household measures.
+# Starchy vegetables count as vegetables (Dietary Guidelines); MyPlate: 1 medium baked potato = 1 cup.
+CUP_EQ_G = dict(broccoli=184, carrots=128, spinach=60, romaine=94, tomatoes=180, onions=160, bell_pepper=149,
+                mixed_veg=182, green_beans=135, corn=165, potatoes=173, sweet_potatoes=200,
                 bananas=118, apples=125, oranges=140, strawberries=152, grapes=151, blueberries=155, raisins=82,
                 orange_juice=249)
 
-# Group caps ("no absurd amounts" across similar foods). unit: 'grams' of food or 'servings' as defined per food.
+# Dietary Guidelines for Americans, 2025-2030 (released Jan 7, 2026): daily servings by calorie level
+# (realfood.gov "Daily Servings by Calorie Level"). Ranges are (low, high).
+DGA_SERVINGS = {
+    1000: dict(protein=(1, 1.5), dairy=2, veg=1.25, fruit=1, wgrain=(1, 2), fat=2),
+    1200: dict(protein=(1.5, 2), dairy=2.5, veg=1.75, fruit=1, wgrain=(1.5, 2.75), fat=2.5),
+    1400: dict(protein=(2, 2.5), dairy=2.5, veg=1.75, fruit=1.5, wgrain=(1.75, 3.25), fat=2.5),
+    1600: dict(protein=(2.5, 3.5), dairy=3, veg=2.5, fruit=1.5, wgrain=(1.75, 3.25), fat=3.5),
+    1800: dict(protein=(2.5, 3.5), dairy=3, veg=3, fruit=1.5, wgrain=(2, 4), fat=4),
+    2000: dict(protein=(3, 4), dairy=3, veg=3, fruit=2, wgrain=(2, 4), fat=4.5),
+    2200: dict(protein=(3.5, 4.5), dairy=3, veg=3.5, fruit=2, wgrain=(2.25, 4.5), fat=4.5),
+    2400: dict(protein=(3.5, 4.5), dairy=3, veg=3.5, fruit=2, wgrain=(2.75, 5.25), fat=5),
+    2600: dict(protein=(3.5, 4.5), dairy=3, veg=4.25, fruit=2, wgrain=(3, 6), fat=5.5),
+    2800: dict(protein=(4, 5), dairy=3, veg=4.25, fruit=2.5, wgrain=(3.25, 6.5), fat=6),
+    3000: dict(protein=(4, 5), dairy=3, veg=4.75, fruit=2.5, wgrain=(3.25, 6.5), fat=7),
+    3200: dict(protein=(4, 5), dairy=3, veg=4.75, fruit=2.5, wgrain=(3.25, 6.5), fat=8),
+}
+DGA_GROUP_LABELS = dict(protein="Protein foods", dairy="Dairy", veg="Vegetables", fruit="Fruits",
+                        wgrain="Whole grains", fat="Healthy fats")
+
+# What counts as ONE serving (grams as eaten). DGA 2025-2030: 3 oz cooked meat/poultry/seafood, 1 egg, 1/2 cup
+# beans/lentils, 1 oz nuts, 2 tbsp nut butter, 3 oz soy; 1 cup milk, 3/4 cup yogurt, 1 oz cheese; 1/2 cup cooked
+# whole grain, 1 slice bread, 1 tortilla; 1 tsp olive oil or butter. Not in the 2025-2030 list, so from MyPlate:
+# fortified soy milk counts as dairy (1 cup); 2 cups cottage cheese = 1 dairy serving; 1 cup cold cereal = 1 grain.
+DGA_FOOD = dict(
+    protein=dict(chicken_breast=85, chicken_thigh=85, drumsticks=85, ground_turkey=85, deli_turkey=85, ground_beef=85,
+                 lean_beef=85, sirloin=85, pork_chops=85, bacon=85, ham=85, tuna=85, salmon=85, tilapia=85, shrimp=85,
+                 eggs=50, tofu=85, lentils=99, black_beans=120, chickpeas=120, pinto_beans=85.5, peanut_butter=32,
+                 almonds=28),
+    dairy=dict(milk_whole=244, milk_2pct=244, soy_milk=243, greek_yogurt=170, cheddar=28, string_cheese=28,
+               american_cheese=28, cottage_cheese=452),
+    wgrain=dict(brown_rice=101, quinoa=92.5, oats=117, ww_pasta=58.5, wheat_bread=32, cheerios=28),
+    fat=dict(canola_oil=14 / 3, olive_oil=13.5 / 3, butter=14.2 / 3),
+)
+DGA_FOOD['veg'] = {k: v for k, v in CUP_EQ_G.items() if k not in ('bananas', 'apples', 'oranges', 'strawberries',
+                                                                  'grapes', 'blueberries', 'raisins', 'orange_juice')}
+DGA_FOOD['fruit'] = {k: v for k, v in CUP_EQ_G.items() if k not in DGA_FOOD['veg']}
+# Near-duplicates share one variety slot (whole vs 2% milk is not variety).
+VARIETY_KEYS = dict(milk_whole="milk", milk_2pct="milk", ground_beef="ground beef", lean_beef="ground beef")
+
+# Refined grains, in grain servings (1/2 cup cooked, 1 oz bread, 1 small tortilla), for "at least half your grains
+# whole" (DGA 2020-2025 key recommendation; 2025-2030 says limit refined grains). Corn tortillas counted as refined
+# to be conservative.
+REFINED_GRAINS = dict(white_rice=79, spaghetti=62, white_bread=28, bagel=28, flour_tortilla=30, corn_tortilla=26)
+
+# Household food waste: share of food bought that is never eaten (spoilage, plate waste), consumer level, 2010.
+# Buzby, Wells & Hyman (2014), USDA ERS EIB-121, Table 1. Applied to the raw, as-bought amount: you buy
+# eaten / (1 - waste). Processed = frozen/canned/dried.
+WASTE_BY_TYPE = {"Poultry": .22, "Red Meat & Pork": .22, "Fish & Seafood": .31, "Eggs": .21, "Plant Proteins": .18,
+                 "Milk & Yogurt": .20, "Cheese": .19, "Grains & Bread": .19, "Starchy Vegetables": .24, "Fruit": .25,
+                 "Vegetables": .24, "Oils & Fats": .17, "Nuts & Seeds": .09, "Snacks": .19}
+WASTE_OVERRIDES = dict(blueberries=.11, raisins=.11, orange_juice=.11,          # processed fruit
+                       broccoli=.18, mixed_veg=.18, green_beans=.18, corn=.18,   # processed vegetables
+                       peanut_butter=.09, avocado=.25, chips=.18, greek_yogurt=.19)
+WASTE_NOTE = ("Typical household food waste by food group: Buzby, Wells & Hyman (2014), USDA ERS EIB-121, Table 1. "
+              "Beans and tofu use the processed-vegetable rate (18%), an assumption.")
+
+# USDA Food Plans: Cost of Food at Home, U.S. average, May 2026 (USDA CNPP, issued June 2026), $ per WEEK for one
+# person in a 4-person household (add 20% for someone living alone). Thrifty uses ages 14-19 / 20-50; the other plans
+# use 14-18 / 19-50.
+USDA_FOOD_PLANS = dict(
+    month="May 2026",
+    thrifty=dict(male={"14-19": 74.90, "20-50": 73.20, "51-70": 64.60, "71+": 61.60},
+                 female={"14-19": 59.80, "20-50": 58.20, "51-70": 54.20, "71+": 60.00}),
+    low=dict(male={"14-18": 73.90, "19-50": 72.90, "51-70": 68.80, "71+": 68.00},
+             female={"14-18": 62.30, "19-50": 63.40, "51-70": 61.70, "71+": 61.70}),
+    moderate=dict(male={"14-18": 92.60, "19-50": 91.60, "51-70": 86.40, "71+": 84.00},
+                  female={"14-18": 74.40, "19-50": 77.50, "51-70": 76.20, "71+": 76.10}),
+    liberal=dict(male={"14-18": 109.00, "19-50": 111.80, "51-70": 103.40, "71+": 103.30},
+                 female={"14-18": 91.80, "19-50": 98.80, "51-70": 91.80, "71+": 91.00}),
+)
+
+# Group caps ("no absurd amounts" across similar foods). unit: 'grams' as eaten, or 'servings' as defined per food.
 GROUP_CAPS = [
-    dict(key="meat_fish", label="Meat, poultry & fish", unit="grams", max=340,
-         note="12 oz raw (~9 oz cooked) per day", types=["Poultry", "Red Meat & Pork", "Fish & Seafood"]),
-    dict(key="legumes", label="Beans & lentils", unit="servings", max=3,
-         note="about 2-2.25 cups cooked per day", ids=["lentils", "black_beans", "chickpeas", "pinto_beans"]),
+    dict(key="meat_fish", label="Meat, poultry & fish", unit="grams", max=255,
+         note="9 oz cooked (about 12 oz raw) per day", types=["Poultry", "Red Meat & Pork", "Fish & Seafood"]),
+    dict(key="legumes", label="Beans & lentils", unit="servings", max=4,
+         note="2 cups cooked per day", ids=["lentils", "black_beans", "chickpeas", "pinto_beans"]),
     dict(key="cheese", label="Cheese", unit="servings", max=3, note="slices / oz / sticks / half-cups", types=["Cheese"]),
-    dict(key="grains", label="Grains & bread", unit="servings", max=9, note="", types=["Grains & Bread"]),
+    dict(key="grains", label="Grains & bread", unit="servings", max=12, note="1/2 cup cooked, 1 slice, 1 tortilla", types=["Grains & Bread"]),
     dict(key="added_fats", label="Oils & butter", unit="servings", max=4, note="tablespoons", types=["Oils & Fats"]),
     dict(key="snacks", label="Snacks & sweets", unit="servings", max=2, note="", types=["Snacks"]),
 ]
@@ -139,12 +251,17 @@ GROUP_CAPS = [
 SETTINGS = dict(
     calorie_tolerance=0.05,          # daily calories within ±5% of target
     max_protein_share=0.35,          # no single food supplies more than 35% of the day's protein
-    share_rule_min_protein=10.0,     # ...applied to foods with >= 10 g protein per 100 g
+    share_rule_min_protein=8.5,      # ...applied to foods with >= 8.5 g protein per 100 g AS EATEN (includes cooked lentils/beans, 9 g)
     meal_kcal=dict(Breakfast=(0.20, 0.30), Lunch=(0.25, 0.35), Dinner=(0.25, 0.40), Snacks=(0.05, 0.20)),
     min_meal_protein_share=0.20,     # breakfast, lunch and dinner each carry >= 20% of the day's protein
-    min_veg_cups=2.5,                # cup-equivalents of non-starchy vegetables per day (DGA 2,000-kcal pattern)
-    min_fruit_cups=2.0,              # cup-equivalents of fruit per day (DGA 2,000-kcal pattern)
+    min_veg_cups=2.5,                # TEXTBOOK model only: vegetable cup-equivalents per day
+    min_fruit_cups=2.0,              # TEXTBOOK model only: fruit cup-equivalents per day
     group_caps={g["key"]: g["max"] for g in GROUP_CAPS},
+    realistic=True,                  # Dietary Guidelines 2025-2030 servings for the calorie level, half grains whole,
+                                     # saturated fat < 10% of calories, variety, household waste in the cost
+    variety=0.5,                     # REALISTIC: one food may supply at most this share of its group's daily servings
+    max_satfat_share=0.10,           # REALISTIC: saturated fat < 10% of calories (DGA 2020-2025 and 2025-2030)
+    include_waste=True,              # REALISTIC: cost includes typical household food waste (USDA ERS)
 )
 
 NUTRIENTS = [("kcal", "Calories", "kcal"), ("protein", "Protein", "g"), ("carb", "Carbohydrate", "g"), ("fat", "Fat", "g"),

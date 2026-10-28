@@ -88,6 +88,7 @@ details.excl summary { cursor: pointer; font-family: var(--display); font-weight
 .facts .line span:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 700; }
 .facts .foot { font-family: var(--body); font-size: 11.5px; line-height: 1.55; color: var(--muted); padding-top: 8px; border-top: 4px solid var(--rule); margin-top: 6px; }
 .top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.top > *, .results > * { min-width: 0; }
 @media (max-width: 620px) { .top { grid-template-columns: minmax(0, 1fr); } }
 /* The cost panel is the site's dark-green hero card. */
 .panel.cost { position: relative; overflow: hidden; background: var(--deep); border-color: var(--deep); color: #f7f3e8; display: grid; gap: 10px; }
@@ -97,7 +98,7 @@ details.excl summary { cursor: pointer; font-family: var(--display); font-weight
 .panel.cost .label { color: var(--gold); }
 .big { font-family: var(--display); font-weight: 900; font-size: clamp(42px, 6vw, 60px); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.045em; }
 .big small { font-size: 15px; font-weight: 700; color: rgba(247,243,232,0.6); letter-spacing: 0.08em; text-transform: uppercase; }
-.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 11px; font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; width: fit-content; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 11px; max-width: 100%; white-space: normal; font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; width: fit-content; }
 .pill.ok { background: var(--gold); color: var(--deep); }
 .pill.bad { background: var(--bad-soft); color: var(--bad); }
 .macro { display: grid; gap: 6px; }
@@ -138,7 +139,7 @@ h2.sec { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; color: var(
 <div class="wrap">
   <header>
     <h1>FeasaBULL Meal Planner</h1>
-    <p class="lede">Enter your numbers once. The planner works out your daily targets with the same equations as FeasaBULL Calories, then uses linear programming to find the cheapest day of food that meets every target.</p>
+    <p class="lede">Enter your numbers once. The planner works out your daily targets with the same equations as FeasaBULL Calories, then uses linear programming to find the cheapest realistic day of food that meets every target, follows the Dietary Guidelines servings, and fits your weekly budget.</p>
     <ol class="steps" aria-label="How it works">
       <li><b>1</b> You</li><li class="arrow" aria-hidden="true">→</li>
       <li><b>2</b> Daily targets (EER + DRI)</li><li class="arrow" aria-hidden="true">→</li>
@@ -170,6 +171,14 @@ h2.sec { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; color: var(
         <select id="diet" name="diet"></select>
         <span class="small" id="diet-desc"></span>
       </fieldset>
+      <fieldset><legend>Weekly food budget</legend>
+        <div class="row"><span class="unit">$</span><input type="number" id="budget" name="budget" min="0" step="1" placeholder="optional, e.g. 60" inputmode="decimal" aria-label="Weekly food budget in dollars"><span class="unit">per week</span></div>
+        <span class="small">A bigger budget buys variety: more different foods in each food group.</span>
+      </fieldset>
+      <fieldset><legend>Plan type</legend>
+        <div class="seg"><input type="radio" name="model" id="m-real" value="realistic" checked><label for="m-real">Realistic</label><input type="radio" name="model" id="m-text" value="textbook"><label for="m-text">Textbook LP</label></div>
+        <span class="small" id="model-desc"></span>
+      </fieldset>
       <fieldset><legend>Prices</legend>
         <select id="psrc" name="psrc"><option value="walmart">Walmart, October 2026</option><option value="bls">BLS U.S. average, September 2026</option></select>
       </fieldset>
@@ -179,6 +188,8 @@ h2.sec { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; color: var(
           <label class="small" for="coef">Activity coefficients</label>
           <select id="coef" name="coef"><option value="iom">IOM 2005, by sex (corrected)</option><option value="site">Same as the current FeasaBULL site</option></select>
           <span class="small">The live site applies the men's activity coefficients to women and girls. The corrected values change women's targets by about −80 to +340 kcal.</span>
+          <label class="small" for="waste">Food waste in the cost (realistic plan)</label>
+          <select id="waste" name="waste"><option value="typical">Typical household (USDA ERS, 9–31% by food)</option><option value="none">None: I eat everything I buy</option></select>
         </div>
       </details>
       <div class="err" id="form-err" role="alert"></div>
@@ -189,13 +200,17 @@ h2.sec { font-weight: 800; font-size: 19px; letter-spacing: -0.02em; color: var(
         <div class="facts" id="facts"></div>
         <div class="panel cost" id="cost"></div>
       </div>
-      <div><div class="secrow"><h2 class="sec">Your day</h2><span class="small">Lunch and dinner share one batch-cooked base: cook once, eat twice.</span></div></div>
+      <div><div class="secrow"><h2 class="sec">Your day</h2><span class="small">Amounts are daily averages over a week: ½ bagel a day means a bagel every other day. Lunch and dinner share one batch-cooked base.</span></div></div>
       <div class="meals" id="meals"></div>
+      <div class="panel" id="budget-panel" hidden><div class="secrow"><h2 class="sec">What more money buys</h2><span class="small" id="budget-note"></span></div><div class="tablewrap"><table id="levels"></table></div></div>
+      <div class="panel" id="shop-panel"><div class="secrow"><h2 class="sec">Shopping list for one week</h2><span class="small" id="shop-note"></span></div><div class="tablewrap"><table id="shop"></table></div></div>
       <div class="panel"><h2 class="sec">Plan vs. targets</h2><div class="tablewrap"><table id="check"></table></div></div>
       <details class="panel math" id="math"><summary><b>Show the math</b></summary><div id="math-body" class="math"></div></details>
       <div class="notes">
         <p>Targets: IOM Estimated Energy Requirement and Dietary Reference Intakes, the same method as FeasaBULL Calories. Nutrients: USDA SR28. Prices: Walmart, Oct 2026 (regular prices), or BLS U.S. city averages.</p>
-        <p>The plan is the cheapest combination of 71 foods that meets every target. Limits keep it realistic: no single food supplies more than 35% of the protein, every main meal carries at least 20% of the protein, and meat, beans, cheese, grains, oils and snacks are capped as groups.</p>
+        <p>Amounts are as eaten: cooked rice, roasted chicken, baked potatoes. The shopping list converts them back to what you buy (dry rice, raw chicken) using USDA's cooked and raw values for each food.</p>
+        <p>The realistic plan follows the Dietary Guidelines for Americans 2025–2030 daily servings for your calorie level (protein foods, dairy, vegetables, fruits, whole grains, healthy fats), keeps at least half the grains whole and saturated fat under 10% of calories, spreads each food group across several foods, and prices in typical household food waste (USDA ERS). The textbook plan drops those rules: it is the classic Stigler/Dantzig diet problem, cheapest on paper and not how anyone eats.</p>
+        <p>For comparison, USDA's own cheapest official plan, the Thrifty Food Plan, is built from what Americans actually eat; it costs more because it includes mixed dishes, drinks and national-average prices.</p>
         <p>Educational estimates for healthy people 14 and older, not medical advice. Unofficial student project, EGN4450 Team 9.</p>
       </div>
     </section>
@@ -227,8 +242,9 @@ function readForm() {
     form: { units, sex: v("sex"), age: $("age").value, ft: $("ft").value, inch: $("inch").value, lb: $("lb").value, cm: $("cm").value, kg: $("kg").value,
             activity: v("activity"), goal: v("goal") },
     prefs: { diet: $("diet").value, priceSource: $("psrc").value,
-             exclude: [...document.querySelectorAll('input[name="exclude"]:checked')].map((c) => c.value) },
-    coef: $("coef").value,
+             exclude: [...document.querySelectorAll('input[name="exclude"]:checked')].map((c) => c.value),
+             settings: { realistic: v("model") !== "textbook", include_waste: $("waste").value === "typical" } },
+    coef: $("coef").value, budget: parseFloat($("budget").value),
   };
 }
 
@@ -239,7 +255,11 @@ function servingText(item) {
 }
 
 function render() {
-  const { form, prefs, coef } = readForm();
+  const { form, prefs, coef, budget } = readForm();
+  const realistic = prefs.settings.realistic;
+  $("model-desc").textContent = realistic
+    ? "Dietary Guidelines servings, variety, typical food waste. What a real week of groceries costs."
+    : "The classic diet problem: cheapest food that meets the nutrient targets, nothing else. Unrealistic on purpose.";
   const d = DIETS.find((x) => x.name === prefs.diet);
   const nAllowed = d ? FOODS.filter((f) => isAllowed(f, d)).length : FOODS.length;
   $("diet-desc").textContent = d ? `${d.desc} · ${nAllowed} of ${FOODS.length} foods` : "";
@@ -251,7 +271,9 @@ function render() {
 
   const T = calculateTargets(person, { coefficients: coef });
   const t = T.optimizerTargets;
-  const r = optimizeDiet(t, prefs);
+  const B = planWithBudget(t, prefs, budget);
+  const r = B.result;
+  const usda = usdaFoodPlans(person.age, person.sex);
   const actLabel = ACTIVITY.find((a) => a.id === person.activity).label;
   const heightTxt = form.units === "metric" ? `${person.heightCm} cm` : `${form.ft}′${form.inch || 0}″`;
   const weightTxt = form.units === "metric" ? `${person.weightKg} kg` : `${form.lb} lb`;
@@ -271,16 +293,27 @@ function render() {
 
   if (r.status !== "optimal") {
     $("cost").innerHTML = `<span class="label">${esc(prefs.diet)}</span><div class="pill bad">No plan meets every rule</div><ul class="reasons">${(r.reasons || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
-    $("meals").innerHTML = ""; $("check").innerHTML = ""; $("math-body").innerHTML = "";
+    $("meals").innerHTML = ""; $("check").innerHTML = ""; $("math-body").innerHTML = ""; $("shop").innerHTML = ""; $("levels").innerHTML = "";
+    $("budget-panel").hidden = true; $("shop-panel").hidden = true;
     return;
   }
   const tot = r.totals, kc = tot.kcal;
   const pP = (4 * tot.protein) / kc * 100, pC = (4 * tot.carb) / kc * 100, pF = (9 * tot.fat) / kc * 100;
+  const pct = (v) => `${Math.round(v * 100)}%`;
+  const budgetLine = B.status === "within_budget"
+    ? `<div class="pill ok">✓ Fits your $${fmt(B.budget, 0)}/week budget</div><div class="small">$${fmt(B.leftover, 2)} a week left over${realistic ? ` · the most varied plan that fits` : ""}.</div>`
+    : B.status === "over_budget"
+    ? `<div class="pill bad">$${fmt(B.shortBy, 2)}/week over your $${fmt(B.budget, 0)} budget</div><div class="small">This is the cheapest plan that meets every rule. To fit $${fmt(B.budget, 0)}: allow more foods, ${realistic ? "try the Textbook LP plan type, " : ""}or raise the budget.</div>`
+    : `<div class="pill ok">✓ Meets every target</div>`;
   $("cost").innerHTML = `
-    <span class="label">Cheapest ${esc(r.diet)} plan</span>
-    <div class="big">$${fmt(r.costPerDay, 2)}<small> / day</small></div>
-    <div class="small">$${fmt(r.costPerWeek, 2)} a week · ${prefs.priceSource === "bls" ? "BLS U.S. average prices" : "Walmart prices"}</div>
-    <div class="pill ok">✓ Meets every target</div>
+    <span class="label">${realistic ? `Your ${esc(r.diet)} plan` : `Cheapest possible ${esc(r.diet)} plan (textbook)`}</span>
+    <div class="big">$${fmt(r.costPerWeek, 2)}<small> / week</small></div>
+    <div class="small">$${fmt(r.costPerDay, 2)} a day · ${prefs.priceSource === "bls" ? "BLS U.S. average prices" : "Walmart prices"}${realistic && prefs.settings.include_waste ? " · includes typical food waste" : ""}</div>
+    ${budgetLine}
+    ${realistic ? (r.variety < 1 ? `<div class="small">Variety: no food gives more than ${pct(r.variety)} of its food group, so at least ${Math.round(1 / r.variety)} different foods per group where the diet allows.</div>`
+      : `<div class="small">Variety rule off: this is the cheapest realistic plan, so a food group may come from a single food.</div>`) : ""}
+    <div class="small">USDA Thrifty Food Plan for a ${person.sex === "female" ? "woman" : "man"} your age: $${fmt(usda.thrifty, 2)}/week; Moderate-Cost: $${fmt(usda.moderate, 2)} (${usda.month}; +20% if you live alone).</div>
+    ${(r.notes || []).map((x) => `<div class="small">${esc(x)}</div>`).join("")}
     <div class="macro"><span class="label">Where the calories come from</span>
       <div class="bar" role="img" aria-label="Protein ${fmt(pP)}%, carbohydrate ${fmt(pC)}%, fat ${fmt(pF)}%"><i style="width:${pP}%;background:var(--meat)"></i><i style="width:${pC}%;background:var(--grain)"></i><i style="width:${pF}%;background:var(--fat)"></i></div>
       <div class="legend"><span style="--c:var(--meat)">Protein ${fmt(pP)}%</span><span style="--c:var(--grain)">Carbs ${fmt(pC)}%</span><span style="--c:var(--fat)">Fat ${fmt(pF)}%</span></div></div>`;
@@ -290,6 +323,24 @@ function render() {
       ${m.items.filter((i) => i.grams >= 10).map((i) => `<div class="item"><span class="n">${esc(i.name)}</span><span class="k">${fmt(i.kcal)} kcal<br>${fmt(i.protein)} g P</span><span class="q">${esc(servingText(i))}</span></div>`).join("") || `<span class="small">Nothing at this meal.</span>`}
       ${m.items.some((i) => i.grams < 10) ? `<div class="extra">Plus a little: ${m.items.filter((i) => i.grams < 10).map((i) => `${esc(i.name.toLowerCase())} (${fmt(i.grams)} g)`).join(", ")}</div>` : ""}
     </article>`).join("");
+
+  // what more money buys (realistic plans: one Simplex solve per variety level)
+  $("budget-panel").hidden = !realistic;
+  if (realistic) {
+    $("budget-note").textContent = B.budget ? `Your budget: $${fmt(B.budget, 0)}/week` : "Enter a weekly budget to pick a level automatically.";
+    $("levels").innerHTML = `<thead><tr><th>Variety rule</th><th class="num">Foods per group</th><th class="num">Cost / week</th><th class="num">Fits budget</th></tr></thead><tbody>${B.levels.map((L) => {
+      const on = Math.abs(L.variety - B.chosen) < 1e-9, fits = L.costPerWeek != null && B.budget ? L.costPerWeek <= B.budget + 1e-9 : null;
+      return `<tr${on ? ' style="font-weight:700"' : ""}><td>${L.variety === 1 ? "None (cheapest)" : `≤ ${pct(L.variety)} of a group from one food`}${on ? " ← your plan" : ""}</td><td class="num">${L.variety === 1 ? "1+" : `${L.foodsPerGroup}+`}</td><td class="num">${L.costPerWeek != null ? `$${fmt(L.costPerWeek, 2)}` : "not possible"}</td><td class="num ${fits ? "yes" : fits === false ? "no" : ""}">${fits == null ? "—" : fits ? "✓" : "✗"}</td></tr>`; }).join("")}</tbody>`;
+  }
+
+  // shopping list: grams as eaten -> as bought -> whole packages
+  const S = r.shopping, metric = form.units === "metric";
+  const amt = (g) => metric ? (g >= 1000 ? `${fmt(g / 1000, 1)} kg` : `${fmt(g)} g`) : (g >= 453.6 ? `${fmt(g / 453.592, 1)} lb` : `${fmt(g / 28.3495, 1)} oz`);
+  $("shop-panel").hidden = false;
+  $("shop-note").textContent = `First trip $${fmt(S.firstTrip, 2)} · then about $${fmt(S.perWeek, 2)}/week`;
+  $("shop").innerHTML = `<thead><tr><th>Buy</th><th class="num">Needed / week</th><th class="num">Packages</th><th class="num">Register</th><th class="num">Lasts</th></tr></thead><tbody>${S.items.map((i) =>
+    `<tr><td>${esc(i.food)}<br><span class="small">${esc(FOODS.find((f) => f.id === i.id).product || "")} · $${fmt(i.price, 2)}</span></td><td class="num">${amt(i.buyG)}</td><td class="num">${i.packages}</td><td class="num">$${fmt(i.checkout, 2)}</td><td class="num">${i.weeks >= 1.95 ? `${fmt(i.weeks, 0)} wk` : "1 wk"}</td></tr>`).join("")}
+    <tr><td><b>First trip</b></td><td></td><td></td><td class="num"><b>$${fmt(S.firstTrip, 2)}</b></td><td></td></tr></tbody>`;
 
   const rows = [
     ["kcal", "kcal", `${fmt(Math.round(kc))}`, `${fmt(Math.floor(t.calories * 0.95))}–${fmt(Math.ceil(t.calories * 1.05))}`, Math.abs(kc - t.calories) <= t.calories * 0.05 + 0.5],
@@ -301,17 +352,25 @@ function render() {
     ["vitc", "mg", fmt(tot.vitc), `≥ ${fmt(t.vitc)}`, tot.vitc >= t.vitc - 0.5],
     ["sodium", "mg", fmt(tot.sodium), `≤ ${fmt(t.sodium)}`, tot.sodium <= t.sodium + 0.5],
   ];
-  $("check").innerHTML = `<thead><tr><th>Nutrient</th><th class="num">Plan</th><th class="num">Target</th><th class="num">Met</th></tr></thead><tbody>${rows.map(([k, u, v, tg, ok]) =>
-    `<tr><td>${NICE[k]} (${u})</td><td class="num">${v}</td><td class="num">${tg}</td><td class="num ${ok ? "yes" : "no"}">${ok ? "✓" : "✗"}</td></tr>`).join("")}</tbody>`;
+  if (realistic) {
+    Object.values(r.groups || {}).forEach((g) => rows.push([g.label, "servings", fmt(g.servings, 1), g.hi != null ? `${fmt(g.lo, 2)}–${fmt(g.hi, 2)}` : `≥ ${fmt(g.lo, 2)}`,
+      g.servings >= g.lo - 0.01 && (g.hi == null || g.servings <= g.hi + 0.01)]));
+    const sf = (9 * tot.satfat) / kc;
+    rows.push(["Saturated fat", "% of kcal", fmt(sf * 100, 1), "< 10", sf <= 0.1 + 1e-6]);
+  }
+  $("check").innerHTML = `<thead><tr><th>Target</th><th class="num">Plan</th><th class="num">Target</th><th class="num">Met</th></tr></thead><tbody>${rows.map(([k, u, v, tg, ok]) =>
+    `<tr><td>${NICE[k] || k} (${u})</td><td class="num">${v}</td><td class="num">${tg}</td><td class="num ${ok ? "yes" : "no"}">${ok ? "✓" : "✗"}</td></tr>`).join("")}</tbody>`;
 
   const n = r.model.foods.length, chosen = r.plan.length;
   const xs = r.model.foods.map((id, j) => [id, r.model.x[j], r.model.c[j]]).filter((e) => e[1] > 1e-6);
   $("math-body").innerHTML = `
     <p class="small">Same model as the spreadsheet's Matrix Model sheet, solved here in your browser.</p>
-<pre>minimize    cᵀx                      cost per day, c = $ per 100 g edible
+<pre>minimize    cᵀx                      cost per day, c = $ per 100 g as eaten${realistic && prefs.settings.include_waste ? " (incl. waste)" : ""}
 subject to  b_min ≤ A·x ≤ b_max      A is ${NUTRIENTS.length} nutrients × ${n} foods allowed by the ${esc(r.diet)} diet
-            meal, protein-share and food-group rows (${r.model.constraints} rows in total)
-            0 ≤ x ≤ u                x = food amounts in 100 g units
+${realistic ? `            d_min ≤ D·x ≤ d_max      D = Dietary Guidelines servings per 100 g (${r.level}-kcal pattern)
+            refined ≤ whole grains, saturated fat ≤ 10% of kcal, variety v = ${pct(r.variety)}
+` : ""}            meal, protein-share and food-group rows (${r.model.constraints} rows in total)
+            0 ≤ x ≤ u                x = food amounts in 100 g units, as eaten
 
 b from step 2: kcal ${fmt(Math.floor(t.calories * 0.95))}–${fmt(Math.ceil(t.calories * 1.05))}, protein ≥ ${t.proteinMin} g, fiber ≥ ${t.fiber} g,
                calcium ≥ ${t.calcium} mg, iron ≥ ${t.iron} mg, potassium ≥ ${t.potassium} mg, vitamin C ≥ ${t.vitc} mg, sodium ≤ ${t.sodium} mg

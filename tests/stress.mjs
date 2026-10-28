@@ -12,11 +12,16 @@ for (let k = 0; k < 300; k++) {
     priceSource: rnd() < 0.3 ? 'bls' : 'walmart' };
   if (rnd() < 0.3) p.mustInclude = { [ids[Math.floor(rnd() * ids.length)]]: 1 };
   if (rnd() < 0.3) p.settings = { max_protein_share: 0.25 + rnd() * 0.2, min_meal_protein_share: 0.15 + rnd() * 0.1 };
+  // both models: 20% textbook; realistic cases get a random variety level and waste on/off
+  const roll = rnd();
+  p.settings = { ...(p.settings || {}), ...(roll < 0.2 ? { realistic: false }
+    : { variety: [1, 1 / 2, 1 / 3, 1 / 4, 1 / 5][Math.floor(rnd() * 5)], include_waste: rnd() < 0.8 }) };
   const r = optimizeDiet(t, p), m = buildModel(t, p);
-  out.push({ status: r.status, cost: r.costPerDay ?? null, c: m.c, rows: m.rows, senses: m.senses, rhs: m.rhs, x: r.model?.x ?? null });
+  out.push({ status: r.status, reasons: r.reasons, diet: p.diet, cost: r.costPerDay ?? null, c: m.c, rows: m.rows, senses: m.senses, rhs: m.rhs, x: r.model?.x ?? null });
 }
 writeFileSync(new URL('./out/stress.json', import.meta.url), JSON.stringify(out));
 const cnt = s => out.filter(o => o.status === s).length;
+for (const o of out.filter((o) => o.status === 'infeasible').slice(0, 6)) console.log('  infeasible:', o.diet, '-', (o.reasons || [])[0]);
 console.log(`stress: ${cnt('optimal')} optimal, ${cnt('infeasible')} infeasible, ${out.length - cnt('optimal') - cnt('infeasible')} other, ${(Date.now()-t0)/out.length|0} ms avg`);
 // Deliberately impossible requests: the solver must report "infeasible" with a reason.
 const imp = [

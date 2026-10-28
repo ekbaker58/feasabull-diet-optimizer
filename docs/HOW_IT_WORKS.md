@@ -36,28 +36,45 @@ spreadsheet) reproduces the live site exactly. Across the 81 test people, the co
 women's maintenance calories by −80 to +340 kcal.
 
 ## Step 2 → 3: the optimizer (`src/lib/dietOptimizer.js`)
-`calculateTargets(person).optimizerTargets` produces exactly the object `optimizeDiet()` takes:
+`calculateTargets(person).optimizerTargets` produces exactly the object the optimizer takes:
 ```js
 { calories, proteinMin, fiber, calcium, iron, potassium, vitc, sodium }
 ```
 Those numbers become the right-hand side **b** of the linear program:
 
-minimize cᵀx subject to b_min ≤ A·x ≤ b_max, plus the diet, meal and balance rules.
+minimize cᵀx subject to b_min ≤ A·x ≤ b_max, plus the diet, meal, Dietary Guidelines and balance rules.
+
+```js
+planWithBudget(targets, { diet: "Balanced" }, 60)   // weekly budget in $, optional
+// -> { status: "within_budget" | "over_budget" | "no_budget", chosen (variety level), levels, result }
+// result: { costPerDay, costPerWeek, meals, plan, groups, shopping: { items, firstTrip, perWeek } }
+```
+- **Realistic model (default):** Dietary Guidelines 2025–2030 servings for the calorie level, half grains whole,
+  saturated fat < 10%, variety, household waste in the cost. **Textbook model:** `settings: { realistic: false }`.
+- **Budget:** the planner solves the LP for five variety levels (each food ≤ 100%, 50%, 33%, 25%, 20% of its
+  food group) and keeps the most varied plan that fits the budget. If none fits, it says how far over the cheapest one is.
+- **As eaten:** amounts are cooked weights (rice, cooked; chicken, roasted). The shopping list undoes cooking,
+  peel/bone and waste to give packages to buy and the first-trip cost.
 
 The full model is in `docs/MODEL.md`.
 
 ## Where each step lives
 | | Person → targets | Targets → plan |
 |---|---|---|
-| **Website** (`web/index.html`, live page) | `personTargets.js`, live as you type | `dietOptimizer.js` in the browser, ~10 ms |
-| **Spreadsheet** | Planner steps 1–2 + **DRI Tables** (formulas) | **Matrix Model** + Excel Solver (Simplex LP) |
+| **Website** (`web/index.html`, live page) | `personTargets.js`, live as you type | `dietOptimizer.js` in the browser, five LPs in about 50 ms |
+| **Spreadsheet** | Planner steps 1–2 + **DRI Tables** (formulas) | **Matrix Model** + Excel Solver (Simplex LP). Planner section 5: plan type, variety, waste, budget check |
 | **FeasaBULL site (Base44)** | its own calculator (already there) | add `dietOptimizer.js`; see `docs/BASE44_INTEGRATION.md` |
 
 The website and the spreadsheet were checked against each other: same targets for 5 test people, and the same
-$3.02/day plan for the example person.
+$43.01/week ($6.14/day) realistic Balanced plan for the example person.
 
 ## Example: the site's own placeholder person
 Male, 21, 5′8″, 155 lb, Active, Maintain → 173 cm, 70.3 kg, PA 1.25 →
 **3,030 kcal, protein ≥ 112 g, fiber ≥ 42 g**, calcium 1,000 mg, iron 8 mg, potassium 3,400 mg,
-vitamin C 90 mg → cheapest Balanced plan **$3.02/day ($21.13/week)**, every target met.
-A typical student day of similar size costs **$6.89** and misses protein, fiber, potassium, sodium and fat limits.
+vitamin C 90 mg →
+- **Realistic Balanced plan: $43.01/week ($6.14/day)**, every target and every Dietary Guidelines serving met.
+  First shopping trip about $76 (whole packages; rice, oats and oil then last several weeks).
+- With a **$60/week budget**: the most varied plan that fits, $56.59/week (at most 20% of each food group from one food).
+- **Textbook LP** (classic diet problem): $3.28/day. Cheapest on paper; rice, beans and milk.
+- A typical student day of similar size costs **$8.96/day** including waste, and misses calories, fiber, potassium and the sodium limit.
+- USDA's Thrifty Food Plan for a man 20–50 is **$73.20/week** (May 2026).

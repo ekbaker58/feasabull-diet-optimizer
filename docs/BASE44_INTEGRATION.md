@@ -14,7 +14,7 @@ The `web/index.html` page in this repo already does the whole chain, and you can
 ## 2. Paste this prompt into the Base44 chat
 ```
 Connect the calculator report to the meal optimizer. Do NOT edit or re-implement src/lib/dietOptimizer.js.
-import { optimizeDiet, FOODS, DIETS } from "@/lib/dietOptimizer";   (use a relative path if @ fails)
+import { planWithBudget, usdaFoodPlans, FOODS, DIETS } from "@/lib/dietOptimizer";   (use a relative path if @ fails)
 
 1. Right after the report is calculated (the object with calories, macros, fiber, nutrients), build:
    const n = (name) => report.nutrients.find((x) => x.name === name)?.amount;
@@ -28,15 +28,20 @@ import { optimizeDiet, FOODS, DIETS } from "@/lib/dietOptimizer";   (use a relat
 2. Below the report add a "Build my cheapest meal plan" section with:
    - Diet dropdown: DIETS.map(d => d.name), with d.desc as helper text -> prefs.diet
    - "Foods I won't eat": checkboxes of FOODS grouped by FOODS[i].group -> prefs.exclude (array of ids)
-3. Call optimizeDiet(targets, prefs) whenever the report or the preferences change.
+   - "Weekly food budget ($)": optional number input -> budget
+3. Call const B = planWithBudget(targets, prefs, budget) whenever anything changes; const result = B.result.
+   B.status is "within_budget" (show "Fits your $X budget", B.leftover), "over_budget" (show "B.shortBy over"),
+   or "no_budget".
 4. If result.status === "optimal":
-   - show result.costPerDay and result.costPerWeek as $0.00
+   - show result.costPerWeek and result.costPerDay as $0.00
+   - a "Shopping list" table from result.shopping.items (food, packages, checkout) and result.shopping.firstTrip
+   - one line: "USDA Thrifty Food Plan for you: $" + usdaFoodPlans(age, sex).thrifty + "/week"
    - one card per entry of result.meals (Breakfast, Lunch, Dinner, Snacks): each item's name,
      servings x serving, grams (whole numbers), and the meal's kcal and protein; list items under 10 g on one
      "Plus a little:" line
    - a table: target vs result.totals with a check mark when met
 5. If result.status === "infeasible": say no plan meets every rule and list result.reasons.
-6. Footer: "Prices: Walmart, Oct 2026. Nutrients: USDA SR28. Educational estimates, not medical advice."
+6. Footer: "Prices: Walmart, Oct 2026. Nutrients: USDA SR28 (as eaten). Servings: Dietary Guidelines 2025–2030. Waste: USDA ERS. Educational estimates, not medical advice."
 Match the existing style. No login or database changes.
 ```
 
@@ -53,6 +58,6 @@ They can be up to about 10% low for very active teen girls.
 
 ## 4. Check before publishing
 - Open **View Changes** and confirm `dietOptimizer.js` was not modified.
-- Example person (Male, 21, 5′8″, 155 lb, Active, Maintain, Balanced): the site must show **3,030 kcal** and **$3.02/day**,
-  the same as the spreadsheet's Planner and `web/index.html`.
+- Example person (Male, 21, 5′8″, 155 lb, Active, Maintain, Balanced, no budget): the site must show **3,030 kcal** and
+  **$43.01/week ($6.14/day)**, the same as the spreadsheet's Planner and `web/index.html`. With a $60 budget: $56.59/week.
 - Then click **Publish**.
