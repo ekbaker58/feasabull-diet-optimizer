@@ -642,15 +642,16 @@ const FOODS = [
 const BIG = 1e9;
 const EPS = 1e-9;
 
-/** A diet by name (from config/diets.json), or pass a diet object to try a custom one without rebuilding:
+/** A diet by name (from config/diets.json, or the live list passed as `diets`), or pass a diet object to try a
+ *  custom one without rebuilding:
  *  { name, desc, protein: [0.10, 0.35], carb: [0.45, 0.65], fat: [0.20, 0.35], forbid: ["pork"], forbid_foods: ["almonds"] } */
-function getDiet(name) {
+function getDiet(name, diets = DIETS) {
   if (name && typeof name === "object") {   // missing macro ranges fall back to Balanced's
-    const base = DIETS.find((x) => x.name === "Balanced") || {};
+    const base = diets.find((x) => x.name === "Balanced") || {};
     return { protein: base.protein, carb: base.carb, fat: base.fat, name: "Custom", desc: "", forbid: [], forbid_foods: [], ...name };
   }
-  const d = DIETS.find((x) => x.name.toLowerCase() === String(name || "Balanced").toLowerCase());
-  if (!d) throw new Error(`Unknown diet "${name}". Options: ${DIETS.map((x) => x.name).join(", ")}`);
+  const d = diets.find((x) => x.name.toLowerCase() === String(name || "Balanced").toLowerCase());
+  if (!d) throw new Error(`Unknown diet "${name}". Options: ${diets.map((x) => x.name).join(", ")}`);
   return d;
 }
 
@@ -681,17 +682,24 @@ function isAllowed(food, diet, exclude = []) {
  *            sugarMax (optional), proteinMin (optional floor in g, e.g. 0.8 g/kg from the calculator) }
  * prefs:   { diet: a diet name from config/diets.json (DIETS), or a diet object (see getDiet),
  *            exclude: [foodId], mustInclude: {foodId: servings}, maxServings: {foodId: servings},
- *            prices: {foodId: package price}, priceSource: 'walmart'|'bls', settings: {...overrides} }
+ *            prices: {foodId: package price}, priceSource: 'walmart'|'bls', settings: {...overrides},
+ *            data: { foods, diets, groupCaps, settings } — optional live data (e.g. from Supabase via supabaseData.js);
+ *                  anything omitted falls back to the data built into this file }
  */
 function buildModel(targets, prefs = {}) {
-  const diet = getDiet(prefs.diet);
-  const S = { ...SETTINGS, ...(prefs.settings || {}) };
-  S.meal_kcal = { ...SETTINGS.meal_kcal, ...((prefs.settings || {}).meal_kcal || {}) };
+  const data = prefs.data || {};
+  const FOODS_ = data.foods || FOODS, DIETS_ = data.diets || DIETS, CAPS_ = data.groupCaps || GROUP_CAPS;
+  const BASE = { ...SETTINGS, ...(data.settings || {}) };
+  BASE.group_caps = data.groupCaps ? Object.fromEntries(CAPS_.map((g) => [g.key, g.max])) : BASE.group_caps;
+  const diet = getDiet(prefs.diet, DIETS_);
+  const S = { ...BASE, ...(prefs.settings || {}) };
+  S.meal_kcal = { ...BASE.meal_kcal, ...((prefs.settings || {}).meal_kcal || {}) };
+  S.group_caps = { ...BASE.group_caps, ...((prefs.settings || {}).group_caps || {}) };
   const kcal = Number(targets.calories);
   if (!(kcal > 0)) throw new Error("targets.calories is required");
 
   const realistic = S.realistic !== false;
-  const foods = FOODS.filter((f) => isAllowed(f, diet, prefs.exclude || []))
+  const foods = FOODS_.filter((f) => isAllowed(f, diet, prefs.exclude || []))
     .map((f) => ({ ...f, cost100: costPer100g(f, prefs, realistic && S.include_waste !== false) }));
   const n = foods.length;
   const keys = NUTRIENTS.map((k) => k.key);
@@ -764,7 +772,7 @@ function buildModel(targets, prefs = {}) {
     if (S.min_veg_cups > 0) add(cupRow(["Vegetables"]), ">=", S.min_veg_cups, `vegetables >= ${S.min_veg_cups} cup-eq`, "group");
     if (S.min_fruit_cups > 0) add(cupRow(["Fruit"]), ">=", S.min_fruit_cups, `fruit >= ${S.min_fruit_cups} cup-eq`, "group");
   }
-  GROUP_CAPS.forEach((g) => {
+  CAPS_.forEach((g) => {
     const cap = (S.group_caps || {})[g.key];
     if (cap == null) return;
     const row = foods.map((f) => (f.cap_group !== g.key ? 0 : g.unit === "grams" ? 100 : 100 / f.serving_g));

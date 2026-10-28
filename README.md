@@ -29,6 +29,8 @@ subject to  b_min ≤ A·x ≤ b_max      nutrient targets (calories, fiber, cal
 | `docs/FOOD_LIST.md` | Every food, type, group and attribute name a diet can exclude (generated) |
 | `src/lib/personTargets.js` | Person → daily targets (same equations as the FeasaBULL site, with the IOM activity-coefficient fix) |
 | `src/lib/dietOptimizer.js` | Targets → plan (two-phase Simplex, no dependencies). `optimizeDiet(targets, prefs)`, `planWithBudget(targets, prefs, weeklyBudget)`, `usdaFoodPlans(age, sex)` |
+| `src/lib/supabaseData.js` | Load foods/diets from Supabase into the optimizer; save and list a user's plans |
+| `supabase/` | Supabase config + migrations (tables, row level security, all food data) — see [`docs/SUPABASE.md`](docs/SUPABASE.md) |
 | `docs/BASE44_INTEGRATION.md` | Step-by-step: add the optimizer to the website + the exact prompt for Base44's AI |
 | `docs/MODEL.md` | The math, written for the report/slides |
 | `data/foods.json` | Prices, yields, servings, meal pattern, diet flags, USDA nutrients for all 71 foods |
