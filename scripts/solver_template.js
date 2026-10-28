@@ -15,9 +15,18 @@
  *               k_lo <= (A_kcal o M)^T x <= k_hi         (each meal's share of calories)
  *               (p o (M_k - beta 1))^T x >= 0            (each main meal carries >= beta of the protein)
  *               p_j x_j - alpha p^T x <= 0               (no food supplies > alpha of the protein)
- *               g_min <= G x <= g_max                   (vegetable/fruit cup-equivalents; caps on meat, beans,
- *                                                        cheese, grains, oils and snacks as groups)
+ *               g_min <= G x <= g_max                   (caps on meat, beans, cheese, grains, oils and snacks as groups)
+ *   REALISTIC model (default; settings.realistic) adds
+ *               d_min <= D x <= d_max                   (Dietary Guidelines 2025-2030 daily servings for the person's
+ *                                                        calorie level: protein foods, dairy, vegetables, fruits,
+ *                                                        whole grains, healthy fats; D_gj = servings of group g in 100 g)
+ *               r^T x - w^T x <= 0                      (refined-grain servings <= whole-grain servings)
+ *               9 sf^T x - 0.10 e^T x <= 0              (saturated fat < 10% of calories)
+ *               x_j <= v * d_min,g / D_gj               (variety: one food <= v of its group's servings; a bound)
+ *               c_j = price / (package x edible yield x cook yield x (1 - household waste))
+ *   TEXTBOOK model: vegetables/fruit cup-equivalent minimums instead of D, no variety, no waste.
  *               0 <= x <= u                             (portion caps; u_j = 0 when the diet excludes food j)
+ *   x is in grams AS EATEN (cooked rice, roasted chicken); the shopping list converts back to grams as bought.
  *
  * THE SOLVER
  *   Two-phase Simplex on a dense tableau. Each pivot is a Gauss-Jordan elimination step
@@ -43,11 +52,20 @@ export function getDiet(name, diets = DIETS) {
   return d;
 }
 
-/** $ per 100 g of edible food. priceSource 'bls' uses the BLS U.S. average where one exists. */
-export function costPer100g(food, { prices = {}, priceSource = "walmart" } = {}) {
-  if (prices[food.id] != null) return (prices[food.id] / (food.package_g * food.edible_yield)) * 100;
-  if (priceSource === "bls" && food.bls_cost_per_100g != null) return food.bls_cost_per_100g;
-  return food.cost_per_100g;
+/** $ per 100 g AS EATEN. priceSource 'bls' uses the BLS U.S. average where one exists. With waste on, the cost
+ *  covers the food that is bought but never eaten (USDA ERS household loss rate for the food's group). */
+export function costPer100g(food, { prices = {}, priceSource = "walmart" } = {}, waste = false) {
+  let c = food.cost_per_100g;
+  if (prices[food.id] != null) c = (prices[food.id] / (food.package_g * food.edible_yield * (food.cook_yield || 1))) * 100;
+  else if (priceSource === "bls" && food.bls_cost_per_100g != null) c = food.bls_cost_per_100g;
+  return waste ? c / (1 - (food.waste || 0)) : c;
+}
+
+/** Dietary Guidelines calorie level used for a calorie target: nearest 200 kcal, within the table (1,000-3,200). */
+export function dgaLevel(kcal, table = DGA_SERVINGS) {
+  const levels = Object.keys(table).map(Number).sort((a, b) => a - b);
+  const want = Math.round(kcal / 200) * 200;
+  return Math.min(levels[levels.length - 1], Math.max(levels[0], want));
 }
 
 export function isAllowed(food, diet, exclude = []) {
@@ -77,8 +95,9 @@ export function buildModel(targets, prefs = {}) {
   const kcal = Number(targets.calories);
   if (!(kcal > 0)) throw new Error("targets.calories is required");
 
+  const realistic = S.realistic !== false;
   const foods = FOODS_.filter((f) => isAllowed(f, diet, prefs.exclude || []))
-    .map((f) => ({ ...f, cost100: costPer100g(f, prefs) }));
+    .map((f) => ({ ...f, cost100: costPer100g(f, prefs, realistic && S.include_waste !== false) }));
   const n = foods.length;
   const keys = NUTRIENTS.map((k) => k.key);
   const A = keys.map((k) => foods.map((f) => f.per100g[k]));
@@ -126,10 +145,30 @@ export function buildModel(targets, prefs = {}) {
     add(foods.map((g, k) => (k === j ? (1 - alpha) * p[k] : -alpha * p[k])), "<=", 0,
       `${f.id} <= ${Math.round(alpha * 100)}% of protein`, "share");
   });
-  // 4. Food-group minimums (USDA cup-equivalents) and group caps (grams or servings)
-  const cupRow = (type) => foods.map((f) => (f.type === type ? 100 / f.cup_eq_g : 0));
-  if (S.min_veg_cups > 0) add(cupRow("Vegetables"), ">=", S.min_veg_cups, `vegetables >= ${S.min_veg_cups} cup-eq`, "group");
-  if (S.min_fruit_cups > 0) add(cupRow("Fruit"), ">=", S.min_fruit_cups, `fruit >= ${S.min_fruit_cups} cup-eq`, "group");
+  // 4. Food groups. REALISTIC: Dietary Guidelines servings for the calorie level (rows of D), half grains whole,
+  //    saturated fat < 10% of calories. TEXTBOOK: vegetable and fruit cup-equivalent minimums only.
+  const notes = [], groupTargets = {};
+  const level = dgaLevel(kcal);
+  if (realistic) {
+    const pattern = DGA_SERVINGS[String(level)];
+    Object.entries(pattern).forEach(([g, amt]) => {
+      const [lo, hi] = Array.isArray(amt) ? amt : [amt, null];
+      const row = foods.map((f) => (f.dga_group === g ? 100 / f.dga_serving_g : 0));
+      const n = new Set(foods.filter((f) => f.dga_group === g).map((f) => f.variety_key || f.id)).size;   // distinct choices
+      if (!n) { notes.push(`${DGA_GROUP_LABELS[g]}: this diet allows no foods in the group, so its ${lo}-serving guideline is skipped.`); return; }
+      groupTargets[g] = { lo, hi, n };
+      add(row, ">=", lo, `${g} servings >= ${lo}`, "guideline");
+      if (hi != null) add(row.slice(), "<=", hi, `${g} servings <= ${hi}`, "guideline");
+    });
+    const refined = foods.map((f) => (f.refined_serving_g ? 100 / f.refined_serving_g : f.dga_group === "wgrain" ? -100 / f.dga_serving_g : 0));
+    if (refined.some((v) => v > 0)) add(refined, "<=", 0, "refined grains <= whole grains", "guideline");
+    const sf = S.max_satfat_share ?? 0.1;
+    add(foods.map((f, j) => 9 * f.satfat - sf * e[j]), "<=", 0, `saturated fat <= ${Math.round(sf * 100)}% of kcal`, "guideline");
+  } else {
+    const cupRow = (types) => foods.map((f) => (types.includes(f.type) ? 100 / f.cup_eq_g : 0));
+    if (S.min_veg_cups > 0) add(cupRow(["Vegetables"]), ">=", S.min_veg_cups, `vegetables >= ${S.min_veg_cups} cup-eq`, "group");
+    if (S.min_fruit_cups > 0) add(cupRow(["Fruit"]), ">=", S.min_fruit_cups, `fruit >= ${S.min_fruit_cups} cup-eq`, "group");
+  }
   CAPS_.forEach((g) => {
     const cap = (S.group_caps || {})[g.key];
     if (cap == null) return;
@@ -138,13 +177,31 @@ export function buildModel(targets, prefs = {}) {
   });
   // 5. Portion caps and must-include foods (rows of the identity matrix)
   const caps = prefs.maxServings || {}, must = prefs.mustInclude || {};
-  const u = foods.map((f) => (f.serving_g * (caps[f.id] ?? f.max_servings)) / 100);
+  const variety = realistic ? Number(S.variety ?? 1) : 1;
+  const u = foods.map((f) => {
+    let cap = (f.serving_g * (caps[f.id] ?? f.max_servings)) / 100;
+    const t = groupTargets[f.dga_group];
+    if (t && variety < 1 && !caps[f.id]) cap = Math.min(cap, (Math.max(variety, 1 / t.n) * t.lo * f.dga_serving_g) / 100);
+    return cap;
+  });
+  // near-duplicates (whole and 2% milk; 80/20 and 93/7 beef) share one variety slot: their servings together <= the cap
+  if (realistic && variety < 1) {
+    const slots = {};
+    foods.forEach((f, j) => { if (f.variety_key && f.variety_key !== f.id && groupTargets[f.dga_group]) (slots[f.variety_key] ||= []).push(j); });
+    Object.entries(slots).forEach(([key, js]) => {
+      if (js.length < 2) return;
+      const t = groupTargets[foods[js[0]].dga_group];
+      add(foods.map((f, j) => (js.includes(j) ? 100 / f.dga_serving_g : 0)), "<=", Math.max(variety, 1 / t.n) * t.lo,
+        `${key} (all kinds) <= ${Math.round(Math.max(variety, 1 / t.n) * 100)}% of ${foods[js[0]].dga_group}`, "variety");
+    });
+  }
   foods.forEach((f, j) => {
     const row = new Array(n).fill(0); row[j] = 1;
     add(row, "<=", u[j], `${f.id} <= cap`, "cap");
     if (must[f.id]) add(row.slice(), ">=", (f.serving_g * must[f.id]) / 100, `${f.id} >= must-include`, "must");
   });
-  return { diet, settings: S, foods, keys, A, c: foods.map((f) => f.cost100), u, rows, senses, rhs, labels, kinds };
+  return { diet, settings: S, realistic, level, groupTargets, notes, foods, keys, A, c: foods.map((f) => f.cost100), u,
+    rows, senses, rhs, labels, kinds };
 }
 
 /** Gauss-Jordan pivot: make column `col` the unit vector e_r with elementary row operations. */
@@ -280,11 +337,13 @@ function diagnose(model) {
       ? `The ${model.diet.name} diet needs more ${words[mac]} (% of calories) than the allowed foods can give. Allow more ${sources[mac]}, or pick another diet.`
       : `The allowed foods push ${words[mac]} above the ${model.diet.name} diet's maximum share of calories. Allow more ${others}, or pick another diet.`];
   }
-  const stages = [["macro", `The ${model.diet.name} diet's macro split cannot be met together with the nutrient targets.`],
+  const stages = [["guideline", "The Dietary Guidelines servings for your calorie level (protein foods, dairy, vegetables, fruits, whole grains, healthy fats), half grains whole, or saturated fat under 10% cannot all be met with the allowed foods. Allow more foods, or switch to the textbook model."],
+    ["variety", "The variety rule (whole and 2% milk, or the two ground beefs, count as one choice) cannot be met. Choose less variety or allow more foods."],
+    ["macro", `The ${model.diet.name} diet's macro split cannot be met together with the nutrient targets.`],
     ["must", "Your must-include foods conflict with the nutrient targets."],
     ["share", "The protein-diversity rule (no food above the max share of protein) cannot be met. Allow more protein foods or raise the max share."],
     ["meal", "The meal-balance rules (calories and protein per meal) cannot be met. Relax the meal ranges or allow more breakfast foods."]];
-  const on = new Set(["cap", "group", "nutrient"]);
+  const on = new Set(["cap", "group", "nutrient"]);   // stages switch on one rule set at a time
   for (const [kind, msg] of stages) {
     on.add(kind);
     if (simplex(zero, ...pick((k) => on.has(k))).status !== "optimal") return [msg];
@@ -297,10 +356,13 @@ export function optimizeDiet(targets, prefs = {}) {
   const model = buildModel(targets, prefs);
   if (!model.foods.length) return { status: "infeasible", reasons: ["No foods are left after applying the diet and exclusions."] };
   const sol = simplex(model.c, model.rows, model.senses, model.rhs);
+  const info = { diet: model.diet.name, realistic: model.realistic, level: model.level, notes: model.notes,
+    variety: model.realistic ? Number(model.settings.variety ?? 1) : 1 };
   if (sol.status !== "optimal")
-    return { status: sol.status, reasons: sol.status === "infeasible" ? diagnose(model) : [], diet: model.diet.name };
+    return { status: sol.status, reasons: sol.status === "infeasible" ? diagnose(model) : [], ...info };
   const x = sol.x.map((v) => (v < 1e-9 ? 0 : v));
   const totals = Object.fromEntries(model.keys.map((k, i) => [k, model.A[i].reduce((s, v, j) => s + v * x[j], 0)]));
+  totals.satfat = model.foods.reduce((s, f, j) => s + f.satfat * x[j], 0);
   const item = (f, j, share = 1) => {
     const g = x[j] * 100 * share;
     return { id: f.id, name: f.name, group: f.group, type: f.type, grams: g, servings: g / f.serving_g, serving: f.serving_desc,
@@ -312,7 +374,61 @@ export function optimizeDiet(targets, prefs = {}) {
     return { meal, items, kcal: items.reduce((s, r) => s + r.kcal, 0), protein: items.reduce((s, r) => s + r.protein, 0),
       cost: items.reduce((s, r) => s + r.cost, 0) };
   });
-  return { status: "optimal", diet: model.diet.name, costPerDay: sol.objective, costPerWeek: sol.objective * 7,
-    plan, meals, totals, pivots: sol.pivots,
+  const groups = Object.fromEntries(Object.entries(model.groupTargets).map(([g, t]) => [g, { ...t, label: DGA_GROUP_LABELS[g],
+    servings: model.foods.reduce((s, f, j) => s + (f.dga_group === g ? (x[j] * 100) / f.dga_serving_g : 0), 0) }]));
+  return { status: "optimal", ...info, costPerDay: sol.objective, costPerWeek: sol.objective * 7,
+    plan, meals, totals, groups, shopping: shoppingList(model, x, prefs), pivots: sol.pivots,
     model: { foods: model.foods.map((f) => f.id), A: model.A, c: model.c, x, constraints: model.labels.length } };
+}
+
+/** One week of the plan as a shopping list: grams as eaten -> grams as bought (undo cooking, peel/bone, and waste)
+ *  -> whole packages. `firstTrip` is what the first week costs at the register; staples (rice, oil, peanut butter)
+ *  then last several weeks, so the ongoing cost per week is the plan's cost. */
+export function shoppingList(model, x, prefs = {}) {
+  const waste = model.realistic && model.settings.include_waste !== false;
+  const items = model.foods.map((f, j) => {
+    if (x[j] * 100 < 0.5) return null;
+    const eatenWeek = 7 * x[j] * 100;
+    const buyG = eatenWeek / (f.cook_yield || 1) / f.edible_yield / (waste ? 1 - (f.waste || 0) : 1);
+    const price = prefs.prices?.[f.id] ?? f.price;
+    const packages = Math.max(1, Math.ceil(buyG / f.package_g - 1e-9));
+    return { id: f.id, food: f.buy_name || f.name, eatenWeek, buyG, packages, price, packageG: f.package_g,
+      checkout: packages * price, weeks: (packages * f.package_g) / buyG, weekly: (buyG / f.package_g) * price };
+  }).filter(Boolean).sort((a, b) => b.checkout - a.checkout);
+  return { items, firstTrip: items.reduce((s, r) => s + r.checkout, 0), perWeek: items.reduce((s, r) => s + r.weekly, 0), waste };
+}
+
+/** USDA Food Plans (Cost of Food at Home) for a person's age and sex, $ per week. */
+export function usdaFoodPlans(age, sex) {
+  const P = USDA_FOOD_PLANS, s = sex === "female" ? "female" : "male";
+  const tfp = age <= 19 ? "14-19" : age <= 50 ? "20-50" : age <= 70 ? "51-70" : "71+";
+  const oth = age <= 18 ? "14-18" : age <= 50 ? "19-50" : age <= 70 ? "51-70" : "71+";
+  return { month: P.month, thrifty: P.thrifty[s][tfp], low: P.low[s][oth], moderate: P.moderate[s][oth], liberal: P.liberal[s][oth],
+    note: "One person in a 4-person household; USDA adds 20% for someone living alone." };
+}
+
+/**
+ * Plan with a weekly budget. The realistic plan has a variety rule: one food may supply at most v of its food group's
+ * daily servings. A smaller v forces more different foods into each group, which costs more. This tries v = 1 (no
+ * variety rule), 1/2, 1/3, 1/4, 1/5 and returns the most varied plan whose weekly cost fits the budget: a
+ * parametric linear program, one Simplex solve per level. If even v = 1 is over budget, it says by how much.
+ */
+export const VARIETY_LEVELS = [1, 1 / 2, 1 / 3, 1 / 4, 1 / 5];
+export function planWithBudget(targets, prefs = {}, weeklyBudget) {
+  const budget = Number(weeklyBudget);
+  const realistic = (prefs.settings || {}).realistic ?? SETTINGS.realistic;
+  const levels = realistic === false ? [1] : VARIETY_LEVELS;
+  const runs = levels.map((v) => ({ variety: v, result: optimizeDiet(targets, { ...prefs, settings: { ...(prefs.settings || {}), variety: v } }) }));
+  const ok = runs.filter((r) => r.result.status === "optimal");
+  const summary = runs.map((r) => ({ variety: r.variety, foodsPerGroup: Math.round(1 / r.variety), status: r.result.status,
+    costPerWeek: r.result.status === "optimal" ? r.result.costPerWeek : null }));
+  if (!ok.length) return { status: "infeasible", budget, levels: summary, result: runs[0].result };
+  if (!(budget > 0)) { const pick = ok.find((r) => Math.abs(r.variety - (SETTINGS.variety ?? 0.5)) < 1e-9) || ok[0];
+    return { status: "no_budget", budget: null, levels: summary, chosen: pick.variety, result: pick.result }; }
+  const fits = ok.filter((r) => r.result.costPerWeek <= budget + 1e-9);
+  if (!fits.length) return { status: "over_budget", budget, levels: summary, chosen: ok[0].variety, result: ok[0].result,
+    shortBy: ok[0].result.costPerWeek - budget };
+  const best = fits[fits.length - 1];              // levels are ordered least -> most varied
+  return { status: "within_budget", budget, levels: summary, chosen: best.variety, result: best.result,
+    leftover: budget - best.result.costPerWeek };
 }

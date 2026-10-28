@@ -19,8 +19,11 @@ const num = (v) => (v == null ? null : Number(v));
 /** Convert a public.foods row to the optimizer's food shape. */
 export function foodFromRow(r) {
   return {
-    id: r.id, name: r.name, group: r.food_group, type: r.food_type,
+    id: r.id, name: r.name, buy_name: r.buy_name || r.name, product: r.store_product, group: r.food_group, type: r.food_type,
     price: num(r.price), package_g: num(r.package_g), edible_yield: num(r.edible_yield),
+    cook_yield: num(r.cook_yield) ?? 1, waste: num(r.waste) ?? 0,
+    dga_group: r.dga_group, dga_serving_g: num(r.dga_serving_g), refined_serving_g: num(r.refined_serving_g),
+    variety_key: r.variety_key || r.id, satfat: num(r.satfat) ?? 0,
     cost_per_100g: num(r.cost_per_100g), bls_cost_per_100g: num(r.bls_cost_per_100g),
     serving_g: num(r.serving_g), serving_desc: r.serving_desc, max_servings: num(r.max_servings),
     meal: [num(r.meal_breakfast), num(r.meal_lunch), num(r.meal_dinner), num(r.meal_snacks)],

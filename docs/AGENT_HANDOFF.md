@@ -35,12 +35,15 @@ person form ─► src/lib/personTargets.js ─► targets (b vector) ─► src
 | Check | Expected |
 |---|---|
 | Example person: Male, 21, 5′8″, 155 lb, Active, Maintain | 173 cm, 70.3 kg → **3,030 kcal**, protein ≥ 112 g, fiber ≥ 42 g, Ca 1,000 mg, Fe 8 mg, K 3,400 mg, vit C 90 mg |
-| Balanced plan for that person | **$3.02/day ($21.13/week)**, every target met |
-| Diet costs for that person | Balanced 3.02 · High-Protein 4.83 · Low-Carb 4.05 · Vegetarian 3.02 · Vegan 3.66 · Pescatarian 3.02 · Gluten-Free 3.02 · No Pork 3.02 |
-| Typical student day (`tests/typical_day.mjs`) | about 2,948 kcal, **$6.89**; misses protein, fiber, potassium, the sodium cap and the fat limit |
-| Workbook recalc | 0 formula errors (about 9,466 formulas) |
+| Realistic Balanced plan (default) | **$43.01/week ($6.14/day)**, every target and Dietary Guidelines serving met; first shopping trip about $76 |
+| Realistic diet costs, $/day | Balanced 6.14 · High-Protein 9.34 · Low-Carb 10.12 · Vegetarian 6.21 · Vegan 7.81 · Pescatarian 6.21 · Gluten-Free 6.73 · No Pork 6.14 |
+| Textbook LP (`settings: { realistic: false }`) | Balanced $3.28/day |
+| Budget levels (variety 100/50/33/25/20%) | $39.69 / $43.01 / $47.29 / $50.56 / $56.59 per week; a $60 budget picks 20% |
+| Typical student day (`tests/typical_day.mjs`, as eaten) | about 2,867 kcal, **$8.96/day incl. waste**; misses calories, fiber, potassium and the sodium cap |
+| USDA Thrifty Food Plan, man 20–50, May 2026 | $73.20/week |
+| Workbook recalc | 0 formula errors (about 10,600 formulas); 77 constraint rows |
 
-The cheapest Balanced plan contains no meat, which is why Balanced, Vegetarian, Pescatarian and No Pork all cost the same. The "no meat" restriction doesn't bind, so its shadow price is zero. That is a real finding, so explain it on a slide rather than hiding it.
+Two real findings to explain on slides: (1) the textbook LP's $3.28/day is correct math and matches published least-cost diets, but it's rice, beans and milk; Dietary Guidelines servings, variety and household waste roughly double it, and it's still below USDA's Thrifty plan. (2) Balanced and No Pork cost the same because the plan barely uses pork, so excluding it has a zero shadow price.
 
 ---
 
@@ -97,8 +100,9 @@ python scripts/build_all.py                    # diets check -> data -> js -> we
 1. **"Food data, prices, nutrient targets, and assumptions"**
    - **Foods and prices:** 71 foods in 8 groups.
      - Prices are Walmart (walmart.com online listings, mostly Oct 2026; store location not recorded, so treat as national-online), with BLS Average Price Data as an alternative.
-     - Edible yield is applied (e.g., chicken drumstick 0.67, bananas 0.64). Cost = price / (package g × yield) × 100.
-   - **Nutrients:** USDA SR28, per 100 g, for 11 nutrients.
+     - Edible yield and cook yield are applied (e.g., bananas 0.64 edible; white rice 2.65 g cooked per g dry). Cost per 100 g as eaten = price / (package g × edible yield × cook yield × (1 − household waste)) × 100.
+   - **Nutrients:** USDA SR28, per 100 g as eaten (cooked entries for foods you cook), for 11 nutrients.
+   - **Food groups:** Dietary Guidelines 2025–2030 daily servings by calorie level; waste: USDA ERS (Buzby et al., 2014); benchmark: USDA Food Plans, May 2026.
    - **Targets:**
      - IOM 2005 EER; goal −500/0/+350 kcal.
      - Protein 1.6 g/kg (clamped to 10–30% of kcal); fat 30%; fiber 14 g/1,000 kcal.
@@ -110,13 +114,12 @@ python scripts/build_all.py                    # diets check -> data -> js -> we
      - Lunch and dinner use the same food pattern.
      - Not medical advice.
 2. **"Linear algebra model, solution, and demonstration"**
-   - **Model:** x (71×1, 100 g units), A (11×71), c, b. The full constraint matrix G has 68 rows in the Excel version.
+   - **Model:** x (71×1, 100 g units as eaten), A (11×71), D (6×71 Dietary Guidelines servings), c (incl. waste), b. The full constraint matrix G has 77 rows in the Excel version.
    - **Simplex:** two-phase, with Gauss-Jordan pivots on the tableau.
-   - **Example:** the person → 3,030 kcal → $3.02/day, against the $6.89 typical day.
+   - **Example:** the person → 3,030 kcal → realistic $43.01/week ($6.14/day); textbook $3.28/day; typical day $8.96/day.
    - **Proof:**
-     - B is the 8×8 basis.
-     - Basic foods: eggs, lentils, 2% milk, brown rice, oats, bananas, mixed vegetables, canola oil.
-     - At their caps: peanut butter, pinto beans, white rice, broccoli.
+     - B is the 11×11 basis (det ≈ 5.3 × 10⁷).
+     - Read the basic foods and the foods at their bounds from the Optimality Proof sheet (they come from HiGHS's exact basis).
      - B⁻¹ via MINVERSE, det(B) ≠ 0.
      - Shadow prices yᵀ = c_Bᵀ B⁻¹; all reduced costs have the correct sign, which proves optimality.
    - **Verification:** HiGHS agreement.
@@ -167,9 +170,9 @@ python scripts/build_all.py                    # diets check -> data -> js -> we
   4. The person calculator: the b vector, with the IOM equation
   5. LP formulation in matrix form
   6. Simplex: one pivot shown as row operations (Gauss-Jordan)
-  7. The example person result: $3.02 vs. $6.89
+  7. The example person result: textbook $3.28/day vs realistic $6.14/day vs typical $8.96/day vs USDA Thrifty $10.46/day
   8. Diet comparison: the A·X table and a cost-by-diet bar chart
-  9. Why four diets tie at $3.02: non-binding constraint, zero shadow price
+  9. The weekly budget as a parametric LP: cost vs variety level ($39.69 → $56.59/week)
   10. Optimality proof: B, det(B), B⁻¹, shadow prices
   11. Sensitivity (from Task 8)
   12. Demo of `web/index.html`
@@ -202,7 +205,7 @@ python scripts/build_all.py                    # diets check -> data -> js -> we
 - Change `price`, `package_g` and `note` in `scripts/foods_v2.py`. The note must include the month and year, e.g., "Walmart.com, Oct 2026".
 - Rule from before: if an item is on Rollback, use the regular price.
 
-**Afterwards:** rebuild, recalc, run `npm test`, and update the reference numbers in docs/README if the $3.02 changes.
+**Afterwards:** rebuild, recalc, run `npm test`, and update the reference numbers in docs/README if the $43.01/week changes.
 
 **Acceptance criteria:** the PR lists old price → new price with source and date for each item.
 
@@ -211,7 +214,7 @@ python scripts/build_all.py                    # diets check -> data -> js -> we
   - `netlify.toml` builds `web/` from source on Netlify and refuses to deploy an impossible diet.
   - `.github/workflows/build.yml` has a GitHub Pages job that is skipped until the repo variable `PAGES` = `true`.
 - **Left for Ethan:** connect one of them (README → "See the website"). GitHub Pages on a private repo needs GitHub Pro (free with the Student Developer Pack).
-- **You:** after it's live, put the URL in the README, check the example person shows 3,030 kcal and $3.02/day, and check the layout at 375 px width.
+- **You:** after it's live, put the URL in the README, check the example person shows 3,030 kcal and $43.01/week, and check the layout at 375 px width.
 
 ### TASK 5 — GitHub Actions CI (done; verify)
 - **Done:** `.github/workflows/build.yml` runs on every push.
@@ -221,8 +224,9 @@ python scripts/build_all.py                    # diets check -> data -> js -> we
   - Confirm the first run on `main` is green, and that a test edit to `config/diets.json` on a branch produces a bot commit.
   - If the workflow file never reached GitHub (pushing it needs a token with `workflow` scope), tell Ethan to create it in the GitHub web UI from the copy in this repo.
 
-### TASK 6 — Variety (research branch `variety`, optional; keep the base LP as the class demo)
-Lunch and dinner are identical, and some amounts are tiny. Possible fixes:
+### TASK 6 — More variety (research branch `variety`, optional)
+Done already: a per-group variety rule (each food ≤ v of its group's servings) that the weekly budget tunes.
+Still true: lunch and dinner are identical, and some amounts are small (shown as daily averages). Possible fixes:
 - **(a) Meal-level variables x_{j,m}:**
   - The LP chooses which meal each food goes in, with per-meal kcal bands and protein shares. JS only.
   - Excel Solver's 200-variable limit makes this impossible in the workbook (71×4 = 284).
@@ -246,7 +250,7 @@ Lunch and dinner are identical, and some amounts are tiny. Possible fixes:
   - The web page's targets table.
   - The tests and the HiGHS check.
 - **Watch the limits:**
-  - Excel Solver allows 100 constraint cells, and the workbook currently uses 68, so 5 more is fine.
+  - Excel Solver allows 100 constraint cells, and the workbook currently uses 77, so 5 more is fine.
   - Vitamin D is hard to hit from food alone. If it makes plans infeasible or very expensive, make it a toggle and report the cost impact honestly.
 
 ### TASK 8 — Sensitivity analysis (feeds slide 11)
@@ -257,10 +261,9 @@ For the example person, Balanced diet:
   - Check against HiGHS duals (`res.ineqlin.marginals`, sign conventions).
 - **Deliverable:** a "Sensitivity" sheet in the workbook built by `build_xlsx.py` (formulas where feasible) plus `docs/SENSITIVITY.md`.
 
-### TASK 9 — Weekly shopping list (web page)
-- **What it does:** in `web/app.html`, add "Shopping list for 7 days": weekly grams per food → packages to buy (ceil(grams / (package_g × yield)), whole packages) → actual checkout cost. Show it next to the LP cost/week; it will be higher, and the page should explain why.
-- **Package data:** comes from FOODS (`package_g`, `price`, `edible_yield`).
-- **Then:** rebuild, add a Playwright test, and check that the layout works at 375 px width.
+### TASK 9 — Weekly shopping list (DONE on the page; add it to the workbook)
+- Done: `shoppingList()` in the optimizer and the "Shopping list for one week" table on the page (as eaten → as bought → whole packages → first-trip cost).
+- Left: a "Shopping List" sheet in the workbook built from the Matrix Model x column (CEILING of weekly grams bought / package grams), plus a Playwright test for the page table.
 
 ### TASK 10 — Supabase in the web page (only after Ethan merges PR #1)
 - **Load supabase-js:** from `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4` (pinned).
@@ -276,7 +279,7 @@ For the example person, Balanced diet:
 - **Also tell Ethan about text errors on the site:**
   - It says "18 nutrients mapped" but shows 19 goals.
   - It says "Six inputs" but the form has seven fields.
-- **Acceptance (once wired):** the example person shows 3,030 kcal and $3.02/day on the live site.
+- **Acceptance (once wired):** the example person shows 3,030 kcal and $43.01/week ($6.14/day) on the live site.
 
 ### TASK 12 — Optional: overweight EER option
 - IOM 2005 also publishes overweight/obese EER equations (BMI ≥ 25). Add `{equations:"overweight"}` as an option. It is not the default, and the site doesn't use it.

@@ -7,14 +7,19 @@ import json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sr28 import load
 from foods_v2 import (FOODS, DIETS, MEALS, SETTINGS, NUTRIENTS, GROUP_ORDER, TYPE_ORDER, ATTRS, ATTR_LABELS,
-                      CUP_EQ_G, GROUP_CAPS)
+                      CUP_EQ_G, GROUP_CAPS, AS_EATEN, DGA_FOOD, DGA_SERVINGS, DGA_GROUP_LABELS, REFINED_GRAINS,
+                      WASTE_BY_TYPE, WASTE_OVERRIDES, WASTE_NOTE, USDA_FOOD_PLANS, VARIETY_KEYS)
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 ab, fd = load()
 
 foods, blanks = [], []
+num = lambda v: float(v) if v not in ('', None) else 0.0
 for f in FOODS:
-    a, d = ab[f['ndb']], fd[f['ndb']]
+    a_buy = ab[f['ndb']]
+    ae = AS_EATEN.get(f['id'])
+    eat_ndb = ae[0] if ae else f['ndb']
+    a, d = ab[eat_ndb], fd[eat_ndb]
     per100 = {}
     for key, _, _ in NUTRIENTS:
         v = a[key]
@@ -22,17 +27,38 @@ for f in FOODS:
             blanks.append(f"{f['id']}.{key}")
             v = 0
         per100[key] = float(v)
-    cost = f['price'] / (f['package_g'] * f['edible_yield']) * 100
+    f = dict(f)
+    if ae:   # cooked / drained form: convert grams as bought -> grams as eaten
+        rk = num(a_buy['kcal']) / num(a['kcal'])
+        rp = num(a_buy['protein']) / num(a['protein']) if min(num(a_buy['protein']), num(a['protein'])) > 1 else None
+        if ae[4]:
+            cy, basis = ae[4], ae[5]
+        else:
+            cy = min(rk, rp) if rp else rk
+            basis = f"USDA mass balance: min(kcal ratio {rk:.2f}" + (f", protein ratio {rp:.2f})" if rp else ")")
+        assert 0.3 < cy < 6, (f['id'], cy)
+        max_g = f['max_servings'] * f['serving_g'] * cy            # keep the same daily cap, now in grams as eaten
+        f.update(buy_name=f['name'], buy_ndb=f['ndb'], buy_serving=f['serving_desc'], name=ae[1], ndb=eat_ndb,
+                 serving_g=ae[2], serving_desc=ae[3], max_servings=max(1.0, round(max_g / ae[2] * 2) / 2),
+                 cook_yield=round(cy, 4), cook_basis=basis)
+    else:
+        f.update(buy_name=f['name'], buy_ndb=f['ndb'], buy_serving=f['serving_desc'], cook_yield=1.0, cook_basis='')
+    cost = f['price'] / (f['package_g'] * f['edible_yield'] * f['cook_yield']) * 100
     bls_cost = None
     if f['bls']:
         bp, bg = f['bls']
-        bls_cost = bp / (bg * f['edible_yield']) * 100
+        bls_cost = bp / (bg * f['edible_yield'] * f['cook_yield']) * 100
     cap_groups = [g['key'] for g in GROUP_CAPS if f['type'] in g.get('types', []) or f['id'] in g.get('ids', [])]
     assert len(cap_groups) <= 1, f['id']
     cup = CUP_EQ_G.get(f['id'])
-    assert (cup is not None) == (f['type'] in ('Vegetables', 'Fruit')), f['id']
-    foods.append(dict(f, cup_eq_g=cup, cap_group=cap_groups[0] if cap_groups else None, usda_desc=d['long'], usda_refuse_pct=float(d['refuse'] or 0), usda_refuse_desc=d['refdesc'],
+    assert (cup is not None) == (f['type'] in ('Vegetables', 'Fruit', 'Starchy Vegetables')), f['id']
+    dga = [(g, m[f['id']]) for g, m in DGA_FOOD.items() if f['id'] in m]
+    assert len(dga) <= 1, f['id']
+    foods.append(dict(f, cup_eq_g=cup, cap_group=cap_groups[0] if cap_groups else None, usda_desc=d['long'], usda_refuse_pct=float(fd[f['buy_ndb']]['refuse'] or 0), usda_refuse_desc=fd[f['buy_ndb']]['refdesc'],
                       cost_per_100g=round(cost, 6), bls_cost_per_100g=None if bls_cost is None else round(bls_cost, 6),
+                      dga_group=dga[0][0] if dga else None, dga_serving_g=round(dga[0][1], 3) if dga else None,
+                      refined_serving_g=REFINED_GRAINS.get(f['id']), variety_key=VARIETY_KEYS.get(f['id'], f['id']),
+                      waste=WASTE_OVERRIDES.get(f['id'], WASTE_BY_TYPE[f['type']]), satfat=num(a['fasat']),
                       per100g=per100))
 
 foods.sort(key=lambda f: (GROUP_ORDER.index(f['group']), TYPE_ORDER.index(f['type']), f['name'].lower()))
@@ -49,7 +75,10 @@ out = dict(
     nutrient_source='USDA National Nutrient Database for Standard Reference, Release 28 (SR28)',
     nutrients=[dict(key=k, label=l, unit=u) for k, l, u in NUTRIENTS],
     attrs=[dict(key=k, label=l) for k, l in zip(ATTRS, ATTR_LABELS)],
-    meals=MEALS, diets=DIETS, settings=SETTINGS, group_caps=GROUP_CAPS, groups=GROUP_ORDER, types=TYPE_ORDER, foods=foods)
+    meals=MEALS, diets=DIETS, settings=SETTINGS, group_caps=GROUP_CAPS, groups=GROUP_ORDER, types=TYPE_ORDER,
+    dga_servings={str(k): v for k, v in DGA_SERVINGS.items()}, dga_group_labels=DGA_GROUP_LABELS,
+    dga_source='Dietary Guidelines for Americans, 2025-2030 (USDA & HHS, Jan 2026): daily servings by calorie level',
+    waste_note=WASTE_NOTE, usda_food_plans=USDA_FOOD_PLANS, foods=foods)
 os.makedirs(os.path.join(ROOT, 'data'), exist_ok=True)
 json.dump(out, open(os.path.join(ROOT, 'data', 'foods.json'), 'w'), indent=1)
 print(f'{len(foods)} foods written; blank USDA fields treated as 0: {blanks or "none"}')

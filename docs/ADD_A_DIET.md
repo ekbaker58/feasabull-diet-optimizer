@@ -52,23 +52,29 @@ Food types are broad, and some foods sit in categories you might not expect:
 To see exactly what each diet removes, run `python scripts/diets.py`. If you didn't run it yourself, read it in the "Check config/diets.json" step of the Actions log.
 
 ## Tested examples (example person: male, 21, 5′8″, 155 lb, active, maintain)
-Each of these was run through the optimizer with the rules above:
+Each of these was run through the optimizer with the rules above. "Realistic" is the default plan (Dietary
+Guidelines servings, variety, household waste); "Textbook" is the plain least-cost LP.
 
-| Diet | `no` | Macros (P / C / F %) | Cheapest plan |
-|---|---|---|---|
-| Nut-Free | `peanut_butter`, `almonds` | 10–35 / 45–65 / 20–35 | $3.20/day |
-| Dairy-Free | `dairy` | 10–35 / 45–65 / 20–35 | $3.50/day |
-| Mediterranean-style | `red meat`, `Snacks & Sweets` | 15–30 / 40–55 / 25–40 | $3.09/day |
-| Paleo-style | `Grains & Bread`, `Plant Proteins`, `dairy`, `soy_milk`, `Snacks & Sweets` | 20–35 / 25–45 / 30–45 | $12.04/day |
-| Keto (carbs 5–10%) | `Grains & Bread`, `Snacks & Sweets` | 15–30 / 5–10 / 60–75 | **No possible plan** |
+| Diet | `no` | Macros (P / C / F %) | Realistic | Textbook |
+|---|---|---|---|---|
+| Balanced (for comparison) | — | 10–35 / 45–65 / 20–35 | $43.01/week ($6.14/day) | $3.28/day |
+| Nut-Free | `peanut_butter`, `almonds` | 10–35 / 45–65 / 20–35 | $44.40/week | $3.47/day |
+| Dairy-Free | `dairy` | 10–35 / 45–65 / 20–35 | $54.10/week | $3.79/day |
+| Mediterranean-style | `red meat`, `Snacks & Sweets` | 15–30 / 40–55 / 25–40 | $43.14/week | $3.35/day |
+| Paleo-style | `Grains & Bread`, `Plant Proteins`, `dairy`, `soy_milk`, `Snacks & Sweets` | 20–35 / 25–45 / 30–45 | **No possible plan** | $12.34/day |
+| Keto (carbs 5–10%) | `Grains & Bread`, `Snacks & Sweets` | 15–30 / 5–10 / 60–75 | **No possible plan** | **No possible plan** |
 
-For comparison, Balanced costs $3.02/day.
+**When a diet excludes a whole food group** (Paleo-style has no dairy and no whole grains), the page says that
+group's guideline is skipped. Paleo-style still fails in the realistic model, because its macro split can't be met
+together with the nutrient targets and the remaining guideline servings. The build would reject it, since it gives
+the example person no plan.
 
-**Why keto fails:** the fiber target is what blocks it. The person calculator sets fiber at 14 g per 1,000 kcal, which is 42 g for this person. Fiber in these 71 foods comes with carbohydrate, so 42 g of fiber is impossible with carbs at 10% of calories. We checked this:
-- **Fiber target removed:** keto becomes feasible at $9.18/day, even with the fruit (≥ 2 cups) and vegetable (≥ 2.5 cups) minimums kept.
-- **Fruit and vegetable minimums removed, fiber target kept:** still infeasible.
-
-The fiber target is part of the b vector from `src/lib/personTargets.js`, not a diet option, and it applies to every diet. A keto diet therefore means changing the nutrition rules, so decide that as a team; don't add a per-diet workaround.
+**Why keto fails:** the fiber target is what blocks it. The person calculator sets fiber at 14 g per 1,000 kcal,
+which is 42 g for this person. Fiber in these 71 foods comes with carbohydrate, so 42 g of fiber is impossible with
+carbs at 10% of calories. We checked this: with the fiber target removed, the textbook keto plan becomes feasible at
+$12.17/day; with it kept, no plan exists. The fiber target is part of the b vector from `src/lib/personTargets.js`,
+not a diet option, and it applies to every diet. A keto diet therefore means changing the nutrition rules, so decide
+that as a team; don't add a per-diet workaround.
 
 **Why restrictive diets cost more:** each `no` entry sets the upper bound u_j = 0 for every food it removes, which shrinks the feasible region. The minimum cost can stay the same or go up, but never down.
 

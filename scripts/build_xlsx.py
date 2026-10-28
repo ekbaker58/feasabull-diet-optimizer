@@ -20,6 +20,8 @@ SOL = json.load(open(os.path.join(ROOT, 'tests', 'out', 'diets.json')))
 TYP = json.loads(subprocess.check_output(['node', '-e', "import('./tests/typical_day.mjs').then(m=>console.log(JSON.stringify(m.TYPICAL_DAY)))"], cwd=ROOT))
 FOODS, NUTS, DIETS, MEALS, S = D['foods'], D['nutrients'], D['diets'], D['meals'], D['settings']
 ATTRS, CAPS = D['attrs'], D['group_caps']
+DGA, DGA_LAB, PLANS = D['dga_servings'], D['dga_group_labels'], D['usda_food_plans']
+DGA_KEYS = ['protein', 'dairy', 'veg', 'fruit', 'wgrain', 'fat']
 NF = len(FOODS); IDS = [f['id'] for f in FOODS]; NK = [n['key'] for n in NUTS]
 EXJ = json.load(open(os.path.join(ROOT, 'tests', 'out', 'example.json')))
 EX, EXP = EXJ['targets'], EXJ['person']
@@ -75,7 +77,7 @@ def pin(row, key, label, val, fmt='#,##0', note=None, col='C'):
     P[key] = f"Planner!${col}${row}"
     return c
 
-title(PL, 'FeasaBULL Diet Planner — person in, cheapest balanced day out',
+title(PL, 'FeasaBULL Diet Planner — person in, realistic budget-aware day out',
       'Step 1: enter the person (same inputs as FeasaBULL Calories). Step 2: targets are calculated with the site\'s equations. '
       'Step 3: pick a diet and re-solve (box at right). Blue = inputs.')
 DT = wb.create_sheet('DRI Tables', 1)
@@ -105,6 +107,31 @@ DRI_ROWS = [('teen', '14–18', 75, 65, 1300, 1300, 11, 15, 3000, 2300), ('young
 for k, row_ in enumerate(DRI_ROWS):
     for j, v in enumerate(row_): put(DT, f'{L(1+j)}{23+k}', v, BLUE if j >= 2 else BLACK, bold=j == 0, box=True, fmt='#,##0' if j >= 2 else None)
 put(DT, 'A29', 'Units: vitamin C, calcium, potassium in mg; iron in mg. Fiber = 14 g per 1,000 kcal. Sodium: keep under 2,300 mg.', italic=True)
+# Dietary Guidelines 2025-2030 daily servings by calorie level (realistic model)
+put(DT, 'A31', 'Dietary Guidelines for Americans 2025–2030: daily servings by calorie level (realistic model). Ranges are low–high.', bold=True)
+DGA_H = ['Calories', 'Protein foods (low)', 'Protein foods (high)', 'Dairy', 'Vegetables (cups)', 'Fruits (cups)', 'Whole grains (low)', 'Whole grains (high)', 'Healthy fats (tsp)']
+for i, h in enumerate(DGA_H): head(DT, f'{L(1+i)}32', h)
+DGA_LEVELS = sorted(int(k) for k in DGA)
+for k, lev in enumerate(DGA_LEVELS):
+    row_ = DGA[str(lev)]; r = 33 + k
+    vals = [lev, row_['protein'][0], row_['protein'][1], row_['dairy'], row_['veg'], row_['fruit'], row_['wgrain'][0], row_['wgrain'][1], row_['fat']]
+    for j, v in enumerate(vals): put(DT, f'{L(1+j)}{r}', v, BLUE if j else BLACK, bold=j == 0, box=True, fmt='#,##0' if j == 0 else '0.00')
+DGA_R0, DGA_R1 = 33, 33 + len(DGA_LEVELS) - 1
+DGA_COL = {'protein': ('B', 'C'), 'dairy': ('D', None), 'veg': ('E', None), 'fruit': ('F', None), 'wgrain': ('G', 'H'), 'fat': ('I', None)}
+put(DT, f'A{DGA_R1+1}', 'One serving: 3 oz cooked meat/poultry/seafood, 1 egg, ½ cup cooked beans, 1 oz nuts, 2 tbsp nut butter; 1 cup milk, ¾ cup yogurt, '
+    '1 oz cheese; 1 cup vegetables or fruit (2 cups leafy greens); ½ cup cooked whole grain or 1 slice bread; 1 tsp oil or butter.', italic=True)
+# USDA Food Plans (Cost of Food at Home), $ per week
+UP0 = DGA_R1 + 4
+put(DT, f'A{UP0-1}', f"USDA Food Plans: Cost of Food at Home, U.S. average, {PLANS['month']} ($ per week, one person in a 4-person household; +20% living alone)", bold=True)
+for i, h in enumerate(['Sex', 'Age group', 'Thrifty', 'Low-Cost', 'Moderate-Cost', 'Liberal']): head(DT, f'{L(1+i)}{UP0}', h)
+UP_ROWS = []
+for sx, sxl in (('male', 'Male'), ('female', 'Female')):
+    for tb, ob in zip(['14-19', '20-50', '51-70', '71+'], ['14-18', '19-50', '51-70', '71+']):
+        UP_ROWS.append((sxl, ob, PLANS['thrifty'][sx][tb], PLANS['low'][sx][ob], PLANS['moderate'][sx][ob], PLANS['liberal'][sx][ob]))
+for k, row_ in enumerate(UP_ROWS):
+    for j, v in enumerate(row_): put(DT, f'{L(1+j)}{UP0+1+k}', v, BLUE if j >= 2 else BLACK, box=True, fmt='$0.00' if j >= 2 else None)
+UP1 = UP0 + len(UP_ROWS)
+put(DT, f'A{UP1+1}', 'Thrifty uses ages 14–19 and 20–50; the other three plans use 14–18 and 19–50 (rows are matched by the closer bracket).', italic=True)
 DT.column_dimensions['A'].width = 16
 for c in 'BCDEFGHIJ': DT.column_dimensions[c].width = 12
 
@@ -188,7 +215,7 @@ dv2 = DataValidation(type='list', formula1='"Walmart (Oct 2026),BLS U.S. average
 
 put(PL, 'B41', '4. BALANCE RULES  (keep amounts realistic)', bold=True, size=11)
 pin(42, 'tol', 'Calorie tolerance (±)', S['calorie_tolerance'], fmt='0%')
-pin(43, 'alpha', 'Max share of the day\'s protein from ONE food', S['max_protein_share'], fmt='0%', note='applies to foods with ≥ 10 g protein / 100 g')
+pin(43, 'alpha', 'Max share of the day\'s protein from ONE food', S['max_protein_share'], fmt='0%', note='applies to foods with ≥ 8.5 g protein / 100 g as eaten')
 pin(44, 'beta', 'Min share of protein at breakfast, lunch AND dinner', S['min_meal_protein_share'], fmt='0%')
 row = 45
 for meal in MEALS:
@@ -202,18 +229,42 @@ pin(row, 'fruit', 'Fruit minimum (cup-equivalents)', S['min_fruit_cups'], fmt='0
 for g in CAPS:
     pin(row, f"cap_{g['key']}", f"Max {g['label'].lower()} ({g['unit']}/day)", g['max'], fmt='0', note=g['note'] or None)
     row += 1
-put(PL, f'B{row}', 'Per-food limits (max servings, exclusions, must-include) are on Food Data.', italic=True)
+put(PL, f'B{row}', 'Per-food limits (max servings, exclusions, must-include) are on Food Data.', italic=True); row += 2
+put(PL, f'B{row}', '5. REALISTIC PLAN & WEEKLY BUDGET', bold=True, size=11); row += 1
+pin(row, 'model', 'Plan type', 'Realistic', fmt='@', note='"Realistic" = Dietary Guidelines servings, variety, waste.  "Textbook" = cheapest on paper.'); PL[f'C{row}'].fill = YELLOW
+dvm = DataValidation(type='list', formula1='"Realistic,Textbook"'); PL.add_data_validation(dvm); dvm.add(f'C{row}'); row += 1
+pin(row, 'variety', 'Variety: max share of a food group from ONE food', S['variety'], fmt='0%',
+    note='50% = at least 2 foods per group; 33% = 3; 25% = 4; 20% = 5. Lower = more variety, higher cost.'); row += 1
+pin(row, 'waste', 'Include typical household food waste in the cost', 'Yes', fmt='@', note='USDA ERS consumer-level loss rates by food group (Food Data column "Household waste")')
+dvw = DataValidation(type='list', formula1='"Yes,No"'); PL.add_data_validation(dvw); dvw.add(f'C{row}'); row += 1
+pin(row, 'satf', 'Saturated fat: max share of calories', S['max_satfat_share'], fmt='0%'); row += 1
+pin(row, 'budget', 'Weekly food budget ($, optional)', None, fmt='$#,##0.00', note='The website tries every variety level and picks the most varied plan that fits.'); row += 1
+P['real'] = f'({P["model"]}="Realistic")'
+P['wasteon'] = f'AND({P["real"]},{P["waste"]}="Yes")'
+put(PL, f'B{row}', 'Dietary Guidelines calorie level used', box=True)
+put(PL, f'C{row}', f'=MIN({DGA_LEVELS[-1]},MAX({DGA_LEVELS[0]},ROUND({P["kcal"]}/200,0)*200))', fmt='#,##0', box=True); P['dgalev'] = f'Planner!$C${row}'; row += 1
+put(PL, f'B{row}', 'USDA Thrifty Food Plan for this person ($/week)', box=True)
+sx_off = f'IF({P["sex"]}="Male",0,4)'
+up_t = f'{sx_off}+IF({P["age"]}<=19,1,IF({P["age"]}<=50,2,IF({P["age"]}<=70,3,4)))'      # Thrifty: 14-19, 20-50
+up_o = f'{sx_off}+IF({P["age"]}<=18,1,IF({P["age"]}<=50,2,IF({P["age"]}<=70,3,4)))'      # other plans: 14-18, 19-50
+put(PL, f'C{row}', f"=INDEX('DRI Tables'!$C${UP0+1}:$C${UP1},{up_t})", fmt='$0.00', box=True)
+put(PL, f'D{row}', f"=\"Moderate-Cost: \"&TEXT(INDEX('DRI Tables'!$E${UP0+1}:$E${UP1},{up_o}),\"$0.00\")&\" ({PLANS['month']}; +20% living alone)\"", italic=True)
+P['thrifty'] = f'Planner!$C${row}'; row += 1
 
 # ================================================================ FOOD DATA
-FCOLS = [('num', '#', 4), ('group', 'Group', 14), ('type', 'Type', 15), ('name', 'Food', 30), ('product', 'Store product (Walmart)', 30),
+FCOLS = [('num', '#', 4), ('group', 'Group', 14), ('type', 'Type', 15), ('name', 'Food (as eaten)', 30), ('bname', 'Bought as', 24),
+         ('product', 'Store product (Walmart)', 30),
          ('price', 'Price ($)', 9), ('pkg', 'Package as bought (g)', 11), ('yield', 'Edible yield', 8),
-         ('cw', 'Walmart $ per 100 g edible', 11), ('bp', 'BLS U.S. avg price ($)', 10), ('bg', 'BLS unit (g)', 9),
-         ('cb', 'BLS $ per 100 g edible', 10), ('cu', '$ per 100 g USED', 11),
+         ('cy', 'Cook yield (g eaten per g bought)', 9), ('waste', 'Household waste', 8),
+         ('cw', 'Walmart $ per 100 g as eaten', 11), ('cww', 'Walmart $ per 100 g incl. waste', 11), ('bp', 'BLS U.S. avg price ($)', 10), ('bg', 'BLS unit (g)', 9),
+         ('cb', 'BLS $ per 100 g as eaten', 10), ('cu', '$ per 100 g USED', 11),
          ('sg', 'Serving (g)', 8), ('sd', 'Serving', 24), ('mx', 'Max servings / day', 9), ('ex', 'Exclude? (Y)', 8), ('must', 'Must include (servings)', 9)]
 FCOLS += [(f"f_{a['key']}", a['label'], 7) for a in ATTRS]
 FCOLS += [('blocked', 'Blocked by diet', 8), ('allowed', 'Allowed (1/0)', 8)]
 FCOLS += [(f"m_{m}", f"Meal share: {m}", 8) for m in MEALS]
-FCOLS += [('cup', 'Grams per cup-equivalent', 9), ('capg', 'Group cap', 12)]
+FCOLS += [('cup', 'Grams per cup-equivalent', 9), ('capg', 'Group cap', 12), ('dgag', 'Dietary Guidelines group', 10),
+          ('dgas', 'Grams per DGA serving', 9), ('refg', 'Refined grain: grams per serving', 9), ('vkey', 'Variety slot', 11),
+          ('sf', 'Saturated fat (g/100 g)', 9)]
 FCOLS += [(f"n_{n['key']}", f"{n['label']} ({n['unit']}/100 g)", 9) for n in NUTS]
 FCOLS += [('ppd', 'Protein per $ (g)', 9), ('kpd', 'Calories per $', 9), ('ndb', 'USDA NDB #', 8), ('udesc', 'USDA SR28 food', 46),
           ('note', 'Price / data note', 44)]
@@ -221,8 +272,9 @@ FC = {k: L(i + 1) for i, (k, _, _) in enumerate(FCOLS)}
 FHR, F0 = 5, 6; F1 = F0 + NF - 1
 def fref(key, absolute=True): return f"'Food Data'!${FC[key]}${F0}:${FC[key]}${F1}"
 
-title(FD, 'Food Data — 71 common foods, sorted by group and type',
-      'Prices: Walmart (Oct 2026, regular price) with BLS U.S. average (Sep 2026) for reference. Nutrients: USDA SR28, per 100 g edible.')
+title(FD, 'Food Data — 71 common foods, sorted by group and type, in grams AS EATEN (cooked rice, roasted chicken)',
+      'Prices: Walmart (Oct 2026, regular price) with BLS U.S. average (Sep 2026). Nutrients: USDA SR28 per 100 g as eaten (cooked entries for foods you cook). '
+      'Cook yield converts grams bought to grams eaten.')
 put(FD, 'A3', 'Blue = data you can edit (prices, servings, caps, exclusions).  Black = formulas.  Yellow = check this price.  '
     'Edible yield removes bone, peel, shells (USDA refuse %).', italic=True)
 for i, (k, h, w) in enumerate(FCOLS):
@@ -233,17 +285,21 @@ for k, f in enumerate(FOODS):
     r = F0 + k; gf = fill(GROUP_FILL[f['group']])
     def v(key, val, color=BLUE, fmt=None, **kw): return put(FD, f'{FC[key]}{r}', val, color, fmt=fmt, box=True, **kw)
     v('num', k + 1, BLACK); v('group', f['group'], BLACK, fl=gf, bold=True); v('type', f['type'], BLACK, fl=gf)
-    v('name', f['name'], BLACK, bold=True); v('product', f['product'], BLACK)
+    v('name', f['name'], BLACK, bold=True); v('bname', f['buy_name'], BLACK); v('product', f['product'], BLACK)
+    v('cy', f['cook_yield'], fmt='0.000'); v('waste', f['waste'], fmt='0%')
+    v('dgag', f['dga_group']); v('dgas', f['dga_serving_g'], fmt='0.0'); v('refg', f['refined_serving_g'], fmt='0.0')
+    v('vkey', f['variety_key'] if f['variety_key'] != f['id'] else None); v('sf', f['satfat'], fmt='0.00')
     flag_price = ('Older listing' in f['price_note']) or ('undated' in f['price_note'])
     v('price', f['price'], fmt='$0.00', fl=YELLOW if flag_price else None)
     v('pkg', f['package_g'], fmt='#,##0'); v('yield', f['edible_yield'], fmt='0%')
-    v('cw', f"={FC['price']}{r}/({FC['pkg']}{r}*{FC['yield']}{r})*100", BLACK, fmt='$0.000')
+    v('cw', f"={FC['price']}{r}/({FC['pkg']}{r}*{FC['yield']}{r}*{FC['cy']}{r})*100", BLACK, fmt='$0.000')
+    v('cww', f"={FC['cw']}{r}/(1-{FC['waste']}{r})", BLACK, fmt='$0.000')
     if f['bls']:
         v('bp', f['bls'][0], fmt='$0.000'); v('bg', round(f['bls'][1], 1), fmt='#,##0')
-        v('cb', f"={FC['bp']}{r}/({FC['bg']}{r}*{FC['yield']}{r})*100", BLACK, fmt='$0.000')
+        v('cb', f"={FC['bp']}{r}/({FC['bg']}{r}*{FC['yield']}{r}*{FC['cy']}{r})*100", BLACK, fmt='$0.000')
     else:
         for key in ('bp', 'bg', 'cb'): v(key, None, BLACK)
-    v('cu', f'=IF(AND({price_rule}=1,{FC["cb"]}{r}<>""),{FC["cb"]}{r},{FC["cw"]}{r})', BLACK, fmt='$0.000', bold=True)
+    v('cu', f'=IF(AND({price_rule}=1,{FC["cb"]}{r}<>""),{FC["cb"]}{r},{FC["cw"]}{r})/(1-IF({P["wasteon"]},{FC["waste"]}{r},0))', BLACK, fmt='$0.000', bold=True)
     v('sg', f['serving_g'], fmt='0.0'); v('sd', f['serving_desc'], BLACK); v('mx', f['max_servings'], fmt='0')
     v('ex', None, al=CENTER); v('must', None, fmt='0.0')
     for a in ATTRS: v(f"f_{a['key']}", 1 if a['key'] in f['flags'] else 0, fmt='0', al=CENTER)
@@ -307,6 +363,23 @@ for i, (lab, c1, c2) in enumerate([('Protein', 'C', 'D'), ('Carbohydrate', 'E', 
     put(MM, f'C{8+i}', f"=INDEX(Diets!${c1}$5:${c1}${4+len(DIETS)},{dsel})", GREEN, fmt='0%', box=True)
     put(MM, f'D{8+i}', f"=INDEX(Diets!${c2}$5:${c2}${4+len(DIETS)},{dsel})", GREEN, fmt='0%', box=True)
 
+# --- Dietary Guidelines pattern for the plan's calorie level (realistic model), F4:K10
+put(MM, 'F3', 'Dietary Guidelines servings at this calorie level (realistic model)', bold=True)
+for c_, h in zip('FGHIJK', ['Group', 'key', 'low', 'high', 'n (distinct foods allowed)', 'variety share used']): head(MM, f'{c_}4', h)
+MM.row_dimensions[4].height = 40
+DG = {}
+for i, g in enumerate(DGA_KEYS):
+    r = 5 + i; lo_c, hi_c = DGA_COL[g]
+    lev = f"MATCH({P['dgalev']},'DRI Tables'!$A${DGA_R0}:$A${DGA_R1},0)"
+    put(MM, f'F{r}', DGA_LAB[g], box=True); put(MM, f'G{r}', g, box=True)
+    put(MM, f'H{r}', f"=INDEX('DRI Tables'!${lo_c}${DGA_R0}:${lo_c}${DGA_R1},{lev})", GREEN, fmt='0.00', box=True)
+    put(MM, f'I{r}', f"=INDEX('DRI Tables'!${hi_c}${DGA_R0}:${hi_c}${DGA_R1},{lev})" if hi_c else None, GREEN, fmt='0.00', box=True)
+    grp, alw, vk = fref('dgag'), fref('allowed'), f"'Food Data'!${FC['vkey']}${F0}:${FC['vkey']}${F1}"
+    # distinct choices: near-duplicates (same variety slot) count once
+    put(MM, f'J{r}', f'=SUMPRODUCT(({grp}=G{r})*({alw}=1))-SUMPRODUCT(({grp}=G{r})*({alw}=1)*({vk}<>""))'
+        f'+(COUNTIFS({grp},G{r},{alw},1,{vk},"milk")>0)*1+(COUNTIFS({grp},G{r},{alw},1,{vk},"ground beef")>0)*1', fmt='0', box=True)
+    put(MM, f'K{r}', f'=IF(J{r}=0,1,MAX({P["variety"]},1/J{r}))', fmt='0%', box=True)
+    DG[g] = dict(lo=f'$H${r}', hi=f'$I${r}', n=f'$J${r}', v=f'$K${r}')
 # --- parameter rows (foods across)
 R_NAME, R_C, R_U, R_L, R_ALW = 13, 14, 15, 16, 17
 R_A0 = 20; R_A1 = R_A0 + len(NUTS) - 1                  # A block
@@ -316,12 +389,15 @@ for j, f in enumerate(FOODS):
     col, fr = FCOL[j], F0 + j
     put(MM, f'{col}{R_NAME}', f"='Food Data'!{FC['name']}{fr}", GREEN, True, fl=fill(GROUP_FILL[f['group']]), al=CENTER, box=True)
     put(MM, f'{col}{R_C}', f"='Food Data'!{FC['cu']}{fr}", GREEN, fmt='0.000', box=True)
-    put(MM, f'{col}{R_U}', f"='Food Data'!{FC['sg']}{fr}*'Food Data'!{FC['mx']}{fr}/100*'Food Data'!{FC['allowed']}{fr}", BLACK, fmt='0.000', box=True)
+    vcap = (f"IF(AND({P['real']},{P['variety']}<1,'Food Data'!{FC['dgag']}{fr}<>\"\"),"
+            f"INDEX($K$5:$K$10,MATCH('Food Data'!{FC['dgag']}{fr},$G$5:$G$10,0))*INDEX($H$5:$H$10,MATCH('Food Data'!{FC['dgag']}{fr},$G$5:$G$10,0))"
+            f"*'Food Data'!{FC['dgas']}{fr}/100,1E9)")
+    put(MM, f'{col}{R_U}', f"=MIN('Food Data'!{FC['sg']}{fr}*'Food Data'!{FC['mx']}{fr}/100,{vcap})*'Food Data'!{FC['allowed']}{fr}", BLACK, fmt='0.000', box=True)
     put(MM, f'{col}{R_L}', f"=MIN({col}{R_U},N('Food Data'!{FC['must']}{fr})*'Food Data'!{FC['sg']}{fr}/100)", BLACK, fmt='0.000', box=True)
     put(MM, f'{col}{R_ALW}', f"='Food Data'!{FC['allowed']}{fr}", GREEN, fmt='0', box=True)
     MM.column_dimensions[col].width = 10
 MM.row_dimensions[R_NAME].height = 58
-for r, lab in ((R_NAME, 'Food'), (R_C, 'c — $ per 100 g edible'), (R_U, 'u — upper bound (100 g units)'), (R_L, 'l — lower bound (must-include)'), (R_ALW, 'allowed by diet')):
+for r, lab in ((R_NAME, 'Food'), (R_C, 'c — $ per 100 g as eaten'), (R_U, 'u — upper bound (portion cap, variety)'), (R_L, 'l — lower bound (must-include)'), (R_ALW, 'allowed by diet')):
     put(MM, f'B{r}', lab, bold=True, fl=SUB, box=True)
 put(MM, f'A{R_A0-1}', 'NUTRIENT MATRIX A  (rows = nutrients, columns = foods, per 100 g edible — USDA SR28)', bold=True, size=11)
 for i, n in enumerate(NUTS):
@@ -361,10 +437,15 @@ for meal in MEALS:
 for meal in MEALS[:3]:
     G.append((f'{meal} protein ≥ min share of day', 'meal', '>=', 0,
               (lambda meal: lambda j: f'={FCOL[j]}${ARow["protein"]}*({FCOL[j]}${MRow[meal]}-{P["beta"]})')(meal)))
-G.append(('Vegetables ≥ min cup-equivalents', 'group', '>=', f'={P["veg"]}',
+G.append(('Vegetables ≥ min cup-equivalents (textbook model)', 'group', '>=', f'=IF({P["real"]},0,{P["veg"]})',
           lambda j: f"=IF('Food Data'!${FC['type']}${F0+j}=\"Vegetables\",100/'Food Data'!${FC['cup']}${F0+j},0)"))
-G.append(('Fruit ≥ min cup-equivalents', 'group', '>=', f'={P["fruit"]}',
+G.append(('Fruit ≥ min cup-equivalents (textbook model)', 'group', '>=', f'=IF({P["real"]},0,{P["fruit"]})',
           lambda j: f"=IF('Food Data'!${FC['type']}${F0+j}=\"Fruit\",100/'Food Data'!${FC['cup']}${F0+j},0)"))
+def dga_fn(g): return lambda j: f"=IF('Food Data'!${FC['dgag']}${F0+j}=\"{g}\",100/'Food Data'!${FC['dgas']}${F0+j},0)"
+DGA_GE = {}
+for g in DGA_KEYS:
+    DGA_GE[g] = len(G)
+    G.append((f'{DGA_LAB[g]} ≥ Dietary Guidelines servings', 'guideline', '>=', f'=IF(AND({P["real"]},{DG[g]["n"]}>0),{DG[g]["lo"]},0)', dga_fn(g)))
 NGE = len(G)
 G.append(('Calories ≤ target + tolerance', 'nutrient', '<=', f'={kcal}*(1+{P["tol"]})', nut_row('kcal')))
 G.append(('Protein ≤ max % of calories', 'macro', '<=', 0, macro_row('protein', 4, '$D$8')))
@@ -383,6 +464,16 @@ for g in CAPS:
             return f"=IF('Food Data'!${FC['capg']}${fr}=\"{g['label']}\",{per},0)"
         return fn
     G.append((f"{g['label']} ≤ max {g['unit']}", 'group', '<=', f'={P["cap_"+g["key"]]}', cap_fn(g)))
+for g in ('protein', 'wgrain'):
+    G.append((f'{DGA_LAB[g]} ≤ Dietary Guidelines servings', 'guideline', '<=', f'=IF({P["real"]},{DG[g]["hi"]},1000000)', dga_fn(g)))
+G.append(('Refined grains ≤ whole grains (servings)', 'guideline', '<=', f'=IF({P["real"]},0,1000000)',
+          lambda j: f"=IF('Food Data'!${FC['refg']}${F0+j}<>\"\",100/'Food Data'!${FC['refg']}${F0+j},IF('Food Data'!${FC['dgag']}${F0+j}=\"wgrain\",-100/'Food Data'!${FC['dgas']}${F0+j},0))"))
+G.append(('Saturated fat ≤ max % of calories  (9·SF − s·kcal ≤ 0)', 'guideline', '<=', f'=IF({P["real"]},0,1000000)',
+          lambda j: f"=9*'Food Data'!${FC['sf']}${F0+j}-{P['satf']}*{FCOL[j]}${ARow['kcal']}"))
+for slot, g in (('milk', 'dairy'), ('ground beef', 'protein')):
+    G.append((f'Variety: all kinds of {slot} together ≤ variety share of {DGA_LAB[g].lower()}', 'variety', '<=',
+              f'=IF(AND({P["real"]},{P["variety"]}<1),{DG[g]["v"]}*{DG[g]["lo"]},1000000)',
+              (lambda slot: lambda j: f"=IF('Food Data'!${FC['vkey']}${F0+j}=\"{slot}\",100/'Food Data'!${FC['dgas']}${F0+j},0)")(slot)))
 SHARE_IDX = [j for j, f in enumerate(FOODS) if f['per100g']['protein'] >= S['share_rule_min_protein']]
 for j0 in SHARE_IDX:
     G.append((f"{FOODS[j0]['name']} ≤ max share of protein", 'share', '<=', 0,
@@ -449,6 +540,10 @@ put(PL, 'F8', 'Status', box=True)
 put(PL, 'G8', '=IF(G7=0,"✓ Plan meets every rule","✗ Re-run Solver: the plan does not fit these inputs")', bold=True, box=True)
 PL.merge_cells('G8:J8')
 PL.conditional_formatting.add('G8', FormulaRule(formula=['$G$7=0'], fill=OKF)); PL.conditional_formatting.add('G8', FormulaRule(formula=['$G$7>0'], fill=BADF))
+put(PL, 'F9', 'Weekly budget', box=True)
+put(PL, 'G9', f'=IF({P["budget"]}="","(no budget entered)",IF(G6<={P["budget"]}+0.005,"✓ Fits: $"&TEXT({P["budget"]}-G6,"0.00")&" a week left over",'
+    f'"✗ $"&TEXT(G6-{P["budget"]},"0.00")&" over budget: lower Variety, allow more foods, or use Textbook"))', bold=True, box=True)
+PL.merge_cells('G9:J9')
 # daily totals vs targets
 put(PL, 'F10', 'Daily totals vs targets', bold=True)
 for c, h in zip('FGHI', ['Nutrient', 'Plan', 'Min', 'Max']): head(PL, f'{c}11', h)
@@ -465,8 +560,17 @@ for i, n in enumerate(NUTS):
     put(PL, f'G{r}', f"='Matrix Model'!C{NTR[n['key']]}", GREEN, True, fmt='#,##0', box=True)
     lo, hi = tmap[n['key']]
     put(PL, f'H{r}', lo, fmt='#,##0', box=True); put(PL, f'I{r}', hi, fmt='#,##0', box=True)
+# Dietary Guidelines servings (realistic model)
+GS = 12 + len(NUTS) + 1
+for c, h in zip('FGHI', ['Food group (servings)', 'Plan', 'Min', 'Max']): head(PL, f'{c}{GS}', h)
+for i, g in enumerate(DGA_KEYS):
+    r = GS + 1 + i
+    put(PL, f'F{r}', DGA_LAB[g], box=True)
+    put(PL, f'G{r}', f"='Matrix Model'!D{R_G0 + DGA_GE[g]}", GREEN, True, fmt='0.0', box=True)
+    put(PL, f'H{r}', f"=IF({P['real']},'Matrix Model'!{DG[g]['lo']},\"—\")", fmt='0.00', box=True)
+    put(PL, f'I{r}', f"=IF(AND({P['real']},'Matrix Model'!{DG[g]['hi']}<>\"\"),'Matrix Model'!{DG[g]['hi']},\"\")", fmt='0.00', box=True)
 # your day, by meal
-YD = 12 + len(NUTS) + 2
+YD = GS + len(DGA_KEYS) + 2
 put(PL, f'F{YD}', 'Your day, by meal  (lunch and dinner share a batch-cooked base — cook once, eat twice)', bold=True)
 NI = 9
 r = YD + 1
@@ -509,7 +613,8 @@ PL.column_dimensions['K'].width = 3; PL.column_dimensions['L'].width = 70
 
 # ================================================================ DIET COMPARISON
 title(DC, 'Diet Comparison — the example person under every diet (A·X computes all nutrients in one matrix product)',
-      'Columns of X are optimal Simplex solutions (Walmart prices, default balance rules) plus a hand-built typical day. Values in 100 g units.')
+      'Columns of X are optimal Simplex solutions (realistic model: Dietary Guidelines servings, 50% variety, household waste; Walmart prices) '
+      'plus a hand-built typical day. Values in 100 g units as eaten.')
 cols = [d['name'] for d in DIETS] + ['Typical day (not optimized)']
 head(DC, 'A5', '#'); head(DC, 'B5', 'Food')
 for k, c in enumerate(cols): head(DC, f'{L(3+k)}5', c); DC.column_dimensions[L(3+k)].width = 13
@@ -524,9 +629,9 @@ for j, f in enumerate(FOODS):
     put(DC, f'{L(3+len(DIETS))}{r}', TYP.get(f['id'], 0) / 100, BLUE, fmt='0.000;-0.000;""', box=True)
 LC = L(2 + len(cols))
 CR = X1 + 2
-put(DC, f'B{CR}', 'Cost per day  (cᵀX, Walmart $)', bold=True, fl=SUB, box=True)
+put(DC, f'B{CR}', 'Cost per day  (cᵀX, Walmart $ incl. household waste)', bold=True, fl=SUB, box=True)
 for k in range(len(cols)):
-    put(DC, f'{L(3+k)}{CR}', f"=SUMPRODUCT({fref('cw')},{L(3+k)}{X0}:{L(3+k)}{X1})", bold=True, fmt='$0.00', fl=SUB, box=True)
+    put(DC, f'{L(3+k)}{CR}', f"=SUMPRODUCT({fref('cww')},{L(3+k)}{X0}:{L(3+k)}{X1})", bold=True, fmt='$0.00', fl=SUB, box=True)
 put(DC, f'B{CR+1}', 'Cost per week', bold=True, fl=SUB, box=True)
 for k in range(len(cols)): put(DC, f'{L(3+k)}{CR+1}', f'={L(3+k)}{CR}*7', fmt='$0.00', fl=SUB, box=True)
 NR = CR + 3
@@ -557,10 +662,11 @@ same = [d['name'] for d in DIETS if SOL[d['name']]['cost'] is not None and abs(S
 insights = [
     f"• Example person (from the calculator): {EXP['sex']}, {EXP['age']}, {EXP['heightCm']} cm, {EXP['weightKg']} kg, {EXP['activity']}, {EXP['goal']} -> "
     f"{EX['calories']:,} kcal, protein ≥ {EX['proteinMin']} g, fiber ≥ {EX['fiber']} g.",
-    f"• The optimized Balanced day costs ${SOL['Balanced']['cost']:.2f} and meets every target; the typical day costs more and misses several targets (red cells).",
-    f"• {', '.join(same)} give the same cost: at these prices the cheapest balanced day already avoids meat, so excluding it costs nothing. "
-    'Plant proteins (beans, peanut butter) and eggs cost far less per gram of protein than meat.',
+    f"• The optimized Balanced day costs ${SOL['Balanced']['cost']:.2f} (incl. waste) and meets every target and the Dietary Guidelines servings; "
+    "the typical day costs more and misses several targets (red cells).",
+    f"• {', '.join(same)} give the same cost: excluding a food the cheapest plan barely uses costs nothing (its shadow price is zero).",
     '• High-Protein and Low-Carb cost more because they force more protein (or fat) per calorie, which pulls in pricier foods.',
+    '• The textbook model (no Dietary Guidelines servings, no variety, no waste) is about half the realistic cost for this person: that gap is the price of a diet people actually eat.',
     '• Each column of X is a separate Simplex solve; A·X then evaluates every diet against every nutrient in one matrix multiplication.']
 for i, t in enumerate(insights): put(DC, f'A{IR+1+i}', t)
 DC.column_dimensions['A'].width = 5; DC.column_dimensions['B'].width = 34
@@ -606,9 +712,19 @@ for j in range(NF): put(PR, f'{FCOL[j]}{PG0-1}', f"='Matrix Model'!{FCOL[j]}{R_N
 PR.row_dimensions[PG0-1].height = 58
 put(PR, f'A{PG0-2}', 'G_T = the tight rows of the constraint matrix (example values fixed so the proof does not move when the Planner changes)', bold=True)
 ex_kcal = EX['calories']
-def proof_row(label):
+def proof_row(label, b_js):
     """coef(j) formula and b for a JS label, built from Food Data so the proof stays live."""
     fd = lambda key, j: f"'Food Data'!${FC[key]}${F0+j}"
+    if ' servings ' in label and label.split(' ')[0] in DGA_KEYS:
+        g = label.split(' ')[0]
+        return (lambda g: lambda j: f"=IF({fd('dgag', j)}=\"{g}\",100/{fd('dgas', j)},0)")(g), b_js
+    if label.startswith('refined grains'):
+        return (lambda j: f"=IF({fd('refg', j)}<>\"\",100/{fd('refg', j)},IF({fd('dgag', j)}=\"wgrain\",-100/{fd('dgas', j)},0))"), 0
+    if label.startswith('saturated fat'):
+        return (lambda j: f"=9*{fd('sf', j)}-{S['max_satfat_share']}*{fd('n_kcal', j)}"), 0
+    if '(all kinds)' in label:
+        slot = label.split(' (all kinds)')[0]
+        return (lambda slot: lambda j: f"=IF({fd('vkey', j)}=\"{slot}\",100/{fd('dgas', j)},0)")(slot), b_js
     if label.startswith('kcal >='): return (lambda j: f"={fd('n_kcal', j)}"), ex_kcal * (1 - S['calorie_tolerance'])
     bal = next(d for d in DIETS if d['name'] == 'Balanced')
     for key, factor in (('protein', 4), ('carb', 4), ('fat', 9)):
@@ -638,15 +754,21 @@ def proof_row(label):
     if label.startswith('fruit'): return (lambda j: f"=IF({fd('type', j)}=\"Fruit\",100/{fd('cup', j)},0)"), S['min_fruit_cups']
     raise ValueError(f'proof row not supported: {label}')
 for i, k in enumerate(T):
-    r = PG0 + i; fn, b = proof_row(labels[k])
+    r = PG0 + i; fn, b = proof_row(labels[k], bx[k])
     put(PR, f'A{r}', labels[k], box=True); put(PR, f'B{r}', '≥' if senses[k] == '>=' else '≤', box=True, al=CENTER)
     put(PR, f'C{r}', b, BLUE, fmt='#,##0.00', box=True)
     for j in range(NF): put(PR, f'{FCOL[j]}{r}', fn(j), fmt='0.00', box=True)
 PG1 = PG0 + len(T) - 1
-# c row, x* row, u row
-for rr, lab, f_ in ((PG1 + 2, 'c (Walmart $ / 100 g)', lambda j: f"='Food Data'!{FC['cw']}{F0+j}"),
+# c row, x* row, u row.  u = portion cap, or the variety cap where that is smaller (realistic model, 50% variety)
+def u_proof(j):
+    f, fdr = FOODS[j], lambda key: f"'Food Data'!{FC[key]}{F0+j}"
+    base = f['serving_g'] * f['max_servings'] / 100
+    if abs(uvec[j] - base) < 1e-9: return f"={fdr('sg')}*{fdr('mx')}/100"
+    return f"=MIN({fdr('sg')}*{fdr('mx')}/100,{uvec[j] * 100 / f['dga_serving_g']:.10g}*{fdr('dgas')}/100)"
+assert R['foods'] == IDS, 'proof assumes the Balanced model allows every food'
+for rr, lab, f_ in ((PG1 + 2, 'c (Walmart $ / 100 g as eaten, incl. waste)', lambda j: f"='Food Data'!{FC['cww']}{F0+j}"),
                     (PG1 + 3, 'x* (Simplex, Balanced)', lambda j: f"='Diet Comparison'!C{X0+j}"),
-                    (PG1 + 4, 'u (cap, 100 g units)', lambda j: f"='Food Data'!{FC['sg']}{F0+j}*'Food Data'!{FC['mx']}{F0+j}/100")):
+                    (PG1 + 4, 'u (cap, 100 g units)', u_proof)):
     put(PR, f'A{rr}', lab, bold=True, fl=SUB, box=True)
     for j in range(NF): put(PR, f'{FCOL[j]}{rr}', f_(j), GREEN, fmt='0.0000', box=True)
 RC_, RX_, RU_ = PG1 + 2, PG1 + 3, PG1 + 4
@@ -698,6 +820,7 @@ for q, fid in enumerate(BB): put(PR, f'{L(8+q)}{SP_}', f'={col_of[fid]}{RC_}', f
 arr(PR, f'H{SP_+1}:{L(7+k_)}{SP_+1}', f'=MMULT(H{SP_}:{L(7+k_)}{SP_},{Bc0}{IV}:{Bc1}{IV+k_-1})', fmt='0.000000', fl=GREY)
 put(PR, f'G{SP_+1}', 'yᵀ (row)', bold=True)
 units = {'kcal': ('per +100 kcal', 100), 'fiber': ('per +1 g fiber', 1), 'calcium': ('per +100 mg calcium', 100),
+         'vitc': ('per +1 mg vitamin C', 1), 'iron': ('per +1 mg iron', 1), 'potassium': ('per +100 mg potassium', 100),
          'vegetables': ('per +1 cup of vegetables', 1), 'fruit': ('per +1 cup of fruit', 1), 'protein': ('per +1 g of protein', 1)}
 for i in range(k_):
     r = SP_ + 1 + i; lab = labels[T[i]]
@@ -705,7 +828,9 @@ for i in range(k_):
     put(PR, f'C{r}', f'=INDEX($H${SP_+1}:${L(7+k_)}${SP_+1},1,{i+1})', fmt='0.000000', bold=True, box=True)
     put(PR, f'D{r}', f'=IF(B{r}="≥",IF(C{r}>=-1E-9,"✓","✗"),IF(C{r}<=1E-9,"✓","✗"))', box=True, al=CENTER)
     key = lab.split(' ')[0]
-    if key in units: put(PR, f'E{r}', f'=TEXT(C{r}*{units[key][1]},"$0.000")&" {units[key][0]}"', box=True)
+    if ' servings ' in lab and key in DGA_KEYS: put(PR, f'E{r}', f'=TEXT(ABS(C{r}),"$0.000")&" per serving of {DGA_LAB[key].lower()} the rule moves"', box=True)
+    elif lab.startswith(('refined', 'saturated')) or '(all kinds)' in lab: put(PR, f'E{r}', f'=TEXT(ABS(C{r}),"$0.000")&" per unit the rule is loosened"', box=True)
+    elif key in units: put(PR, f'E{r}', f'=TEXT(C{r}*{units[key][1]},"$0.000")&" {units[key][0]}"', box=True)
     elif key in [g['key'] for g in CAPS]:
         unit_ = next(g['unit'] for g in CAPS if g['key'] == key)
         put(PR, f'E{r}', f'=TEXT(ABS(C{r}),"$0.000")&" saved per extra {unit_[:-1]} the {key.replace("_", " ")} cap allows"', box=True)
@@ -741,18 +866,29 @@ lines = [
   '(A, M, G, c, u, x; G·x and cᵀx by MMULT).  Diet Comparison = A·X for every diet at once.  Optimality Proof = B⁻¹, det(B), shadow prices.', False),
  ('The website optimizer (src/lib/dietOptimizer.js) builds exactly the same G, b, c, u and solves them with a two-phase Simplex (Gauss-Jordan row operations).', False),
  ('', False),
- ('Rules that keep the plan realistic ("no absurd amounts")', True),
+ ('Two models (Planner → Plan type)', True),
+ ('Realistic (default): everything below.  Textbook: only rules 1–4 plus vegetables ≥ 2.5 and fruit ≥ 2 cups — the classic Stigler/Dantzig diet problem, cheapest on paper.', False),
+ ('', False),
+ ('Rules that keep the plan realistic', True),
  ('1. Portion caps per food (max servings/day on Food Data) — upper bounds u.', False),
  ('2. Protein diversity: no single food supplies more than 35% of the day\'s protein:  p_j·x_j − α·(pᵀx) ≤ 0  (a linear row for each high-protein food).', False),
  ('3. Meal balance: breakfast, lunch and dinner each carry ≥ 20% of the protein; each meal stays inside its calorie share. '
   'Uses the meal matrix M:  meal calories = (A_kcal ∘ M_k)ᵀ·x.', False),
- ('4. Group caps: meat/poultry/fish ≤ 12 oz raw, beans & lentils ≤ 3 servings, cheese ≤ 3, grains ≤ 9, oils & butter ≤ 4 tbsp, snacks ≤ 2.', False),
- ('5. Food-group minimums in USDA cup-equivalents: vegetables ≥ 2.5 cups, fruit ≥ 2 cups (Dietary Guidelines, 2,000-kcal pattern).', False),
+ ('4. Group caps: meat/poultry/fish ≤ 9 oz cooked, beans & lentils ≤ 4 servings, cheese ≤ 3, grains ≤ 12, oils & butter ≤ 4 tbsp, snacks ≤ 2.', False),
+ ('5. Dietary Guidelines for Americans 2025–2030 daily servings for the plan\'s calorie level (DRI Tables): protein foods, dairy, vegetables, fruits, '
+  'whole grains (low–high) and healthy fats. Rows D·x ≥ d_min (and ≤ d_max), D_gj = servings of group g in 100 g of food j.', False),
+ ('6. At least half the grains whole (refined-grain servings ≤ whole-grain servings) and saturated fat under 10% of calories.', False),
+ ('7. Variety: one food may give at most v of its group\'s servings (default 50%, so at least 2 foods per group). Whole and 2% milk, and the two ground '
+  'beefs, count as one choice. The website lowers v as far as the weekly budget allows (a parametric LP: one Simplex solve per level).', False),
+ ('8. Household food waste: cost per 100 g eaten = price ÷ (package × edible yield × cook yield × (1 − waste)), with USDA ERS consumer-level loss rates by food group.', False),
  ('', False),
  ('Assumptions and limits to state in the presentation', True),
  ('• Prices are one retailer (Walmart online, Oct 26 2026, regular non-sale prices) and vary by store. BLS U.S. averages (Sep 2026) are a sensitivity check (Planner → Price source).', False),
  ('• Yellow prices on Food Data are older or undated listings — verify them before final numbers.', False),
- ('• Nutrients are USDA SR28 per 100 g of the food as bought and edible (raw meat, dry grains/beans). Small cooking losses are ignored.', False),
+ ('• Amounts are AS EATEN. Foods you cook use the USDA entry for the cooked form (e.g. rice, cooked; chicken breast, roasted). Cook yield = grams eaten per gram bought, '
+  'from a mass balance between the raw and cooked USDA entries (the smaller of the energy and protein ratios, which is conservative), or USDA\'s measured package yield for frozen vegetables.', False),
+ ('• Why not $3/day: the textbook LP really does cost about $3.28/day here (in line with published least-cost diets, e.g. $1.98/day at 2009–10 prices, Chungchunlam et al., 2020), '
+  'but it is rice, beans and milk with no variety and no waste. USDA\'s Thrifty Food Plan for this person is $73.20/week, about $10.46/day (May 2026), because it is built from what people actually eat.', False),
  ('• Edible yield converts price to $ per 100 g EDIBLE: bone-in chicken, peels and shells would otherwise look cheaper than they are.', False),
  ('• Each food has a fixed meal pattern (matrix M), so lunch and dinner share the same batch-cooked base — realistic for meal prep, but not varied.', False),
  ('• A linear program cannot force "use at least a normal portion if you use a food at all" (that needs integer variables), so plans can include small amounts (e.g. 15 g of milk).', False),
@@ -765,6 +901,11 @@ lines = [
  ('U.S. Bureau of Labor Statistics. (2026). Average retail food and energy prices, U.S. and Midwest region [Data table]. https://www.bls.gov/regions/mid-atlantic/data/averageretailfoodandenergyprices_usandmidwest_table.htm', False),
  ('Walmart Inc. (2026, October 26). Product listings for the foods in Food Data [Retail prices]. https://www.walmart.com/ and https://business.walmart.com/', False),
  ('U.S. Department of Agriculture & U.S. Department of Health and Human Services. (2020). Dietary guidelines for Americans, 2020–2025 (9th ed.). https://www.dietaryguidelines.gov/', False),
+ ('U.S. Department of Agriculture & U.S. Department of Health and Human Services. (2026). Dietary guidelines for Americans, 2025–2030: Daily servings by calorie level. https://realfood.gov/', False),
+ ('U.S. Department of Agriculture, Food and Nutrition Service. (2026). USDA food plans: Cost of food at home, U.S. average, May 2026. https://www.fns.usda.gov/research/cnpp/usda-food-plans/cost-food-monthly-reports', False),
+ ('U.S. Department of Agriculture, Food and Nutrition Service. (2021). Thrifty Food Plan, 2021 (FNS-916). https://fns-prod.azureedge.us/sites/default/files/resource-files/TFP2021.pdf', False),
+ ('Buzby, J. C., Wells, H. F., & Hyman, J. (2014). The estimated amount, value, and calories of postharvest food losses at the retail and consumer levels in the United States (EIB-121). USDA Economic Research Service.', False),
+ ('Chungchunlam, S. M. S., Moughan, P. J., Garrick, D. P., & Drewnowski, A. (2020). Animal-sourced foods are required for minimum-cost nutritionally adequate food patterns for the United States. Nature Food, 1(6), 376–381. https://doi.org/10.1038/s43016-020-0096-8', False),
  ('Institute of Medicine. (2005). Dietary reference intakes for energy, carbohydrate, fiber, fat, fatty acids, cholesterol, protein, and amino acids. The National Academies Press. https://doi.org/10.17226/10490', False),
  ('National Academies of Sciences, Engineering, and Medicine. (2019). Dietary reference intakes for sodium and potassium. The National Academies Press. https://doi.org/10.17226/25353', False),
  ('Dantzig, G. B. (1990). The diet problem. Interfaces, 20(4), 43–47. https://doi.org/10.1287/inte.20.4.43', False),

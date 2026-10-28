@@ -6,7 +6,8 @@
 -- ---------------------------------------------------------------- foods
 create table if not exists public.foods (
   id                text primary key,
-  name              text not null,
+  name              text not null,          -- as eaten, e.g. 'White rice, cooked'
+  buy_name          text,                   -- as bought, e.g. 'White rice (dry)'
   food_group        text not null,          -- Proteins, Dairy & Alternatives, Carbohydrates, Fruits, Vegetables, Fats, Oils & Nuts, Snacks & Sweets
   food_type         text not null,          -- Poultry, Red Meat & Pork, Fish & Seafood, Eggs, Plant Proteins, ...
   sort_order        integer not null,
@@ -14,6 +15,8 @@ create table if not exists public.foods (
   price             numeric(10, 3) not null check (price >= 0),
   package_g         numeric not null check (package_g > 0),
   edible_yield      numeric not null check (edible_yield > 0 and edible_yield <= 1),
+  cook_yield        numeric not null default 1 check (cook_yield > 0),   -- grams eaten per gram bought (cooked rice 2.65)
+  waste             numeric not null default 0 check (waste >= 0 and waste < 1),   -- household waste share (USDA ERS)
   price_note        text,
   price_observed    date,
   bls_price         numeric,
@@ -28,17 +31,22 @@ create table if not exists public.foods (
   flags             text[] not null default '{}',   -- meat, pork, poultry, fish, egg, dairy, gluten
   cup_eq_g          numeric,                        -- grams per USDA cup-equivalent (vegetables and fruit only)
   cap_group         text,                           -- key in public.group_caps
+  dga_group         text,                           -- Dietary Guidelines group: protein, dairy, veg, fruit, wgrain, fat
+  dga_serving_g     numeric,                        -- grams (as eaten) per Dietary Guidelines serving
+  refined_serving_g numeric,                        -- refined grains: grams per grain serving
+  variety_key       text,                           -- near-duplicates share one variety slot (milk, ground beef)
+  satfat            numeric not null default 0,     -- saturated fat, g per 100 g as eaten
   usda_ndb          text,
   usda_desc         text,
-  -- nutrients per 100 g edible portion (USDA SR28)
+  -- nutrients per 100 g AS EATEN (USDA SR28; cooked entries for foods you cook)
   kcal numeric not null, protein numeric not null, carb numeric not null, fat numeric not null,
   fiber numeric not null, sugar numeric not null, calcium numeric not null, iron numeric not null,
   potassium numeric not null, sodium numeric not null, vitc numeric not null,
-  -- $ per 100 g edible, always consistent with the price columns
-  cost_per_100g     numeric generated always as (price / (package_g * edible_yield) * 100) stored,
+  -- $ per 100 g as eaten (before waste), always consistent with the price columns
+  cost_per_100g     numeric generated always as (price / (package_g * edible_yield * cook_yield) * 100) stored,
   bls_cost_per_100g numeric generated always as (
                       case when bls_price is null or bls_unit_g is null then null
-                           else bls_price / (bls_unit_g * edible_yield) * 100 end) stored,
+                           else bls_price / (bls_unit_g * edible_yield * cook_yield) * 100 end) stored,
   updated_at        timestamptz not null default now(),
   constraint meal_shares_sum_to_one check (abs(meal_breakfast + meal_lunch + meal_dinner + meal_snacks - 1) < 0.0001)
 );
