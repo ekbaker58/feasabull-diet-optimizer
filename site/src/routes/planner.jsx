@@ -5,13 +5,14 @@ import { Footer } from "@/components/Footer";
 import { PlannerForm } from "@/components/planner/PlannerForm";
 import { PlannerTargets } from "@/components/planner/PlannerTargets";
 import {
+  CollapsiblePanel,
   PlanCost,
   PlanInfeasible,
   PlannerMeals,
   SectionHeading,
 } from "@/components/planner/PlannerPlan";
 import {
-  BudgetLevels,
+  BudgetChart,
   ShoppingList,
   TargetCheck,
   ShowTheMath,
@@ -179,6 +180,11 @@ function Results({ solved, prefs, form }) {
 
   const { report, budget, usda, who } = solved;
   const result = budget.result;
+  const checks = result.status === "optimal"
+    ? summarizeChecks(checkRows(result, report.optimizerTargets, prefs.realistic))
+    : null;
+  const usedFoods =
+    result.status === "optimal" ? result.model.x.filter((v) => v > 1e-6).length : 0;
 
   return (
     <>
@@ -208,16 +214,9 @@ function Results({ solved, prefs, form }) {
 
           {prefs.realistic ? (
             <Panel>
-              <SectionHeading
-                title="What more money buys"
-                note={
-                  budget.budget
-                    ? `Your budget: ${money(budget.budget, 0)}/week`
-                    : "Enter a weekly budget to pick a level automatically."
-                }
-              />
+              <SectionHeading title="What more money buys" />
               <div className="mt-4">
-                <BudgetLevels
+                <BudgetChart
                   levels={budget.levels}
                   chosen={budget.chosen}
                   budget={budget.budget}
@@ -226,50 +225,46 @@ function Results({ solved, prefs, form }) {
             </Panel>
           ) : null}
 
-          <Panel>
-            <SectionHeading
-              title="Shopping list for one week"
-              note={`First trip ${money(result.shopping.firstTrip)} · then about ${money(result.shopping.perWeek)}/week`}
+          <CollapsiblePanel
+            title="Shopping list for one week"
+            summary={`${result.shopping.items.length} items · first trip ${money(result.shopping.firstTrip)} · then about ${money(result.shopping.perWeek)}/week`}
+          >
+            <ShoppingList
+              shopping={result.shopping}
+              foodsById={FOODS_BY_ID}
+              metric={form.units === "metric"}
             />
-            <div className="mt-4">
-              <ShoppingList
-                shopping={result.shopping}
-                foodsById={FOODS_BY_ID}
-                metric={form.units === "metric"}
-              />
-            </div>
-          </Panel>
+          </CollapsiblePanel>
 
-          <Panel>
-            <SectionHeading title="Plan vs. targets" />
-            <div className="mt-4">
-              <TargetCheck rows={checkRows(result, report.optimizerTargets, prefs.realistic)} />
-            </div>
-          </Panel>
+          <CollapsiblePanel
+            title="Plan vs. targets"
+            summary={checks.summary}
+            tone={checks.missed.length ? "bad" : "good"}
+            forceOpen={checks.missed.length > 0}
+          >
+            <TargetCheck rows={checks.rows} />
+          </CollapsiblePanel>
 
-          <ShowTheMath
-            result={result}
-            targets={report.optimizerTargets}
-            realistic={prefs.realistic}
-            includeWaste={prefs.includeWaste}
-            nutrientCount={NUTRIENTS.length}
-            foodsById={FOODS_BY_ID}
-          />
+          <CollapsiblePanel
+            title="Show the math"
+            summary={`${result.pivots} Simplex pivots · ${result.model.constraints} rows · ${usedFoods} of ${result.model.foods.length} foods used`}
+          >
+            <ShowTheMath
+              result={result}
+              targets={report.optimizerTargets}
+              realistic={prefs.realistic}
+              includeWaste={prefs.includeWaste}
+              nutrientCount={NUTRIENTS.length}
+              foodsById={FOODS_BY_ID}
+            />
+          </CollapsiblePanel>
         </>
       )}
 
-      <div className="rounded-[2rem] border border-brand-ink/10 bg-white/40 p-5 text-[11px] leading-relaxed text-brand-ink/50 sm:p-6">
-        <p>
-          Targets: IOM Estimated Energy Requirement and Dietary Reference Intakes, the same
-          equations as the Calculator tab. Nutrients: USDA SR28. Prices: Walmart, Oct 2026, or BLS
-          U.S. city averages. Amounts are as eaten — cooked rice, roasted chicken — and the shopping
-          list converts them back to what you buy.
-        </p>
-        <p className="mt-2">
-          Educational estimates for healthy people 14 and older, not medical advice. Unofficial
-          student project, EGN4450 Team 9.
-        </p>
-      </div>
+      <p className="px-2 text-[12px] leading-relaxed text-brand-ink/50">
+        Educational estimates for healthy people 14 and older, not medical advice. Sources are in
+        “Show the math”. Unofficial student project, EGN4450 Team 9.
+      </p>
     </>
   );
 }
@@ -381,3 +376,24 @@ function row(label, unit, value, target, tolerance, digits = 0) {
     met: value >= target - tolerance,
   };
 }
+
+/** One line for the collapsed panel: what passed, and what did not. */
+function summarizeChecks(rows) {
+  const missed = rows.filter((r) => !r.met);
+  const named = (r) => NUTRIENT_LABELS_SHORT[r.label] || r.label;
+  const summary = missed.length
+    ? `✗ ${missed.length} of ${rows.length} missed: ${missed.map(named).join(", ")}`
+    : `✓ All ${rows.length} targets met`;
+  return { rows, missed, summary };
+}
+
+const NUTRIENT_LABELS_SHORT = {
+  kcal: "calories",
+  protein: "protein",
+  fiber: "fiber",
+  calcium: "calcium",
+  iron: "iron",
+  potassium: "potassium",
+  vitc: "vitamin C",
+  sodium: "sodium",
+};

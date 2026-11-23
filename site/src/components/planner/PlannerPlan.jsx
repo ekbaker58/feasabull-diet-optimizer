@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { fmt, money, pct, servingText } from "@/lib/plannerFormat";
 
@@ -177,12 +178,7 @@ export function PlannerMeals({ meals }) {
               <p className="py-3 text-[12px] text-brand-ink/45">Nothing at this meal.</p>
             )}
 
-            {traces.length ? (
-              <p className="mt-2 text-[11px] leading-snug text-brand-ink/40">
-                Plus a little:{" "}
-                {traces.map((i) => `${i.name.toLowerCase()} (${fmt(i.grams)} g)`).join(", ")}
-              </p>
-            ) : null}
+            {traces.length ? <TraceAmounts items={traces} /> : null}
           </article>
         );
       })}
@@ -205,3 +201,85 @@ export const tableClass = cn("w-full border-collapse text-[12px]");
 export const thClass =
   "border-b border-brand-ink/15 pb-2 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-brand-ink/55";
 export const tdClass = "border-b border-dashed border-brand-ink/12 py-2.5 align-top text-brand-ink/75";
+
+/**
+ * Sub-10 g amounts, folded away. They are an artifact of a linear program
+ * having no "a normal portion or none" constraint, and they read badly inline.
+ */
+function TraceAmounts({ items }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="rounded-full bg-brand-mist px-2.5 py-1 text-[11px] font-semibold text-brand-ink/60 transition-colors hover:bg-brand-green/12 hover:text-brand-deep"
+      >
+        +{items.length} trace amount{items.length === 1 ? "" : "s"}{" "}
+        <span aria-hidden="true" className={open ? "inline-block rotate-180" : "inline-block"}>
+          ▾
+        </span>
+      </button>
+      {open ? (
+        <p className="mt-1.5 text-[11.5px] leading-snug text-brand-ink/55">
+          {items.map((i) => `${i.name.toLowerCase()} (${fmt(i.grams)} g)`).join(", ")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A panel whose headline is always visible and whose body opens on click.
+ * Open state lives in React, not in the DOM: the page re-solves on every
+ * keystroke, and an uncontrolled <details> would snap shut on each re-render.
+ */
+export function CollapsiblePanel({ title, summary, tone = "neutral", forceOpen = false, children }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (forceOpen) setOpen(true);
+  }, [forceOpen]);
+
+  return (
+    <div className="overflow-hidden rounded-[2rem] border border-brand-ink/10 bg-white/65">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-4 p-6 text-left transition-colors hover:bg-white/80 sm:p-7"
+      >
+        <span className="min-w-0">
+          <span className="block font-display text-2xl font-extrabold tracking-tight text-brand-deep sm:text-[1.7rem]">
+            {title}
+          </span>
+          {summary ? (
+            <span
+              className={cn(
+                "mt-1 block text-[12.5px] leading-snug",
+                tone === "good"
+                  ? "font-semibold text-brand-green"
+                  : tone === "bad"
+                    ? "font-semibold text-red-700"
+                    : "text-brand-ink/55",
+              )}
+            >
+              {summary}
+            </span>
+          ) : null}
+        </span>
+        <span
+          aria-hidden="true"
+          className={cn(
+            "shrink-0 text-lg text-brand-ink/35 transition-transform",
+            open ? "rotate-180" : "",
+          )}
+        >
+          ▾
+        </span>
+      </button>
+      {open ? <div className="px-6 pb-6 sm:px-7 sm:pb-7">{children}</div> : null}
+    </div>
+  );
+}

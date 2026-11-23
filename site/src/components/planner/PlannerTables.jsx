@@ -5,58 +5,97 @@ import { thClass, tdClass } from "@/components/planner/PlannerPlan";
 const numeric = "text-right tabular-nums";
 
 /**
- * The parametric LP, as a table. One Simplex solve per variety level; the
- * budget picks the most varied row that fits.
+ * The parametric LP, as a shape. One Simplex solve per variety level: tighten
+ * the rule and the feasible set shrinks, so the cost rises. The budget is drawn
+ * across it, and the chosen level is the tallest bar still left of the line.
  */
-export function BudgetLevels({ levels, chosen, budget }) {
+export function BudgetChart({ levels, chosen, budget }) {
+  const costs = levels.map((l) => l.costPerWeek).filter((c) => c != null);
+  if (!costs.length) return null;
+  const max = Math.max(...costs, budget || 0) * 1.08;
+  const budgetAt = budget ? (budget / max) * 100 : null;
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-[12px]">
-        <thead>
-          <tr>
-            <th className={thClass}>Variety rule</th>
-            <th className={cn(thClass, numeric)}>Foods per group</th>
-            <th className={cn(thClass, numeric)}>Cost / week</th>
-            <th className={cn(thClass, numeric)}>Fits budget</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div>
+      <div className="relative">
+        {budgetAt != null ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 z-10 border-l-2 border-dashed border-brand-deep/45"
+            style={{ left: `calc(10.25rem + (100% - 15.5rem) * ${budgetAt / 100})` }}
+          />
+        ) : null}
+
+        <ul className="flex flex-col gap-2">
           {levels.map((level) => {
             const isChosen = Math.abs(level.variety - chosen) < 1e-9;
-            const fits =
-              level.costPerWeek != null && budget ? level.costPerWeek <= budget + 1e-9 : null;
+            const cost = level.costPerWeek;
+            const fits = cost != null && budget ? cost <= budget + 1e-9 : null;
+            const label =
+              level.variety === 1 ? "1 food / group" : `${level.foodsPerGroup} foods / group`;
             return (
-              <tr key={level.variety} className={isChosen ? "font-bold" : undefined}>
-                <td className={tdClass}>
-                  {level.variety === 1
-                    ? "None (cheapest)"
-                    : `≤ ${pct(level.variety)} of a group from one food`}
-                  {isChosen ? (
-                    <span className="ml-2 text-[11px] uppercase tracking-[0.1em] text-brand-green">
-                      ← your plan
-                    </span>
-                  ) : null}
-                </td>
-                <td className={cn(tdClass, numeric)}>
-                  {level.variety === 1 ? "1+" : `${level.foodsPerGroup}+`}
-                </td>
-                <td className={cn(tdClass, numeric)}>
-                  {level.costPerWeek != null ? money(level.costPerWeek) : "not possible"}
-                </td>
-                <td
+              <li
+                key={level.variety}
+                className="flex items-center gap-3"
+                aria-label={
+                  cost == null
+                    ? `${label}: no plan possible`
+                    : `${label}: ${money(cost)} per week${fits === false ? ", over budget" : ""}${isChosen ? ", your plan" : ""}`
+                }
+              >
+                <span
                   className={cn(
-                    tdClass,
-                    numeric,
-                    fits ? "text-brand-green" : fits === false ? "text-red-700" : "",
+                    "w-[9.5rem] shrink-0 text-[12.5px] leading-tight",
+                    isChosen ? "font-bold text-brand-deep" : "text-brand-ink/60",
                   )}
                 >
-                  {fits == null ? "—" : fits ? "✓" : "✗"}
-                </td>
-              </tr>
+                  {label}
+                  {isChosen ? (
+                    <span className="block text-[11px] font-bold uppercase tracking-[0.1em] text-brand-green">
+                      ◀ your plan
+                    </span>
+                  ) : null}
+                </span>
+
+                <span className="relative h-5 flex-1 overflow-hidden rounded-full bg-brand-mist">
+                  {cost != null ? (
+                    <span
+                      className={cn(
+                        "absolute inset-y-0 left-0 rounded-full transition-[width] duration-300",
+                        isChosen
+                          ? "bg-brand-green"
+                          : fits === false
+                            ? "bg-red-700/35"
+                            : "bg-brand-green/35",
+                      )}
+                      style={{ width: `${(cost / max) * 100}%` }}
+                    />
+                  ) : null}
+                </span>
+
+                <span
+                  className={cn(
+                    "w-[4.5rem] shrink-0 text-right text-[12.5px] tabular-nums",
+                    isChosen
+                      ? "font-bold text-brand-deep"
+                      : fits === false
+                        ? "text-red-700"
+                        : "text-brand-ink/60",
+                  )}
+                >
+                  {cost != null ? money(cost) : "—"}
+                </span>
+              </li>
             );
           })}
-        </tbody>
-      </table>
+        </ul>
+      </div>
+
+      <p className="mt-3 text-[12px] leading-snug text-brand-ink/55">
+        {budget
+          ? `The dashed line is your ${money(budget, 0)} budget. Tighter variety costs more, so the plan is the most varied bar that still fits.`
+          : "Tighter variety costs more. Enter a weekly budget and the planner picks the most varied level that fits."}
+      </p>
     </div>
   );
 }
@@ -69,10 +108,8 @@ export function ShoppingList({ shopping, foodsById, metric }) {
         <thead>
           <tr>
             <th className={thClass}>Buy</th>
-            <th className={cn(thClass, numeric)}>Needed / week</th>
             <th className={cn(thClass, numeric)}>Packages</th>
             <th className={cn(thClass, numeric)}>Register</th>
-            <th className={cn(thClass, numeric)}>Lasts</th>
           </tr>
         </thead>
         <tbody>
@@ -81,23 +118,18 @@ export function ShoppingList({ shopping, foodsById, metric }) {
               <td className={tdClass}>
                 <span className="font-semibold text-brand-deep">{item.food}</span>
                 <span className="mt-0.5 block text-[11.5px] text-brand-ink/55">
-                  {foodsById.get(item.id)?.product || ""} · {money(item.price)}
+                  {foodsById.get(item.id)?.product || ""} · {money(item.price)} ·{" "}
+                  {buyAmount(item.buyG, metric)} a week
                 </span>
               </td>
-              <td className={cn(tdClass, numeric)}>{buyAmount(item.buyG, metric)}</td>
               <td className={cn(tdClass, numeric)}>{item.packages}</td>
               <td className={cn(tdClass, numeric)}>{money(item.checkout)}</td>
-              <td className={cn(tdClass, numeric)}>
-                {item.weeks >= 1.95 ? `${fmt(item.weeks)} wk` : "1 wk"}
-              </td>
             </tr>
           ))}
           <tr className="font-bold text-brand-deep">
             <td className={tdClass}>First trip</td>
             <td className={tdClass} />
-            <td className={tdClass} />
             <td className={cn(tdClass, numeric)}>{money(shopping.firstTrip)}</td>
-            <td className={tdClass} />
           </tr>
         </tbody>
       </table>
@@ -105,8 +137,9 @@ export function ShoppingList({ shopping, foodsById, metric }) {
   );
 }
 
-/** A·x against b, row by row, with a tick when the constraint is satisfied. */
+/** A·x against b, row by row. Anything missed is sorted to the top and flagged. */
 export function TargetCheck({ rows }) {
+  const ordered = [...rows].sort((a, b) => Number(a.met) - Number(b.met));
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-[12px]">
@@ -119,17 +152,15 @@ export function TargetCheck({ rows }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.label}>
+          {ordered.map((row) => (
+            <tr key={row.label} className={row.met ? undefined : "bg-red-50/70"}>
               <td className={tdClass}>
                 {NUTRIENT_LABELS[row.label] || row.label}{" "}
                 <span className="text-brand-ink/40">({row.unit})</span>
               </td>
               <td className={cn(tdClass, numeric)}>{row.value}</td>
               <td className={cn(tdClass, numeric)}>{row.target}</td>
-              <td
-                className={cn(tdClass, numeric, row.met ? "text-brand-green" : "text-red-700")}
-              >
+              <td className={cn(tdClass, numeric, row.met ? "text-brand-green" : "text-red-700")}>
                 {row.met ? "✓" : "✗"}
               </td>
             </tr>
@@ -149,27 +180,15 @@ export function ShowTheMath({ result, targets, realistic, includeWaste, nutrient
   const hi = fmt(Math.ceil(targets.calories * 1.05));
 
   return (
-    <details className="group rounded-[2rem] border border-brand-ink/10 bg-white/55 p-6 sm:p-7">
-      <summary className="flex cursor-pointer items-center justify-between gap-3 marker:content-['']">
-        <span className="font-display text-2xl font-extrabold tracking-tight text-brand-deep sm:text-[1.7rem]">
-          Show the math
-        </span>
-        <span
-          aria-hidden="true"
-          className="text-brand-ink/35 transition-transform group-open:rotate-180"
-        >
-          ▾
-        </span>
-      </summary>
-
-      <p className="mt-3 text-[11px] text-brand-ink/45">
+    <>
+      <p className="text-[12px] text-brand-ink/55">
         The same model as the spreadsheet&apos;s Matrix Model sheet, solved here in your browser.
       </p>
 
-      <pre className="mt-4 overflow-x-auto rounded-2xl bg-brand-deep p-5 text-[11px] leading-relaxed text-brand-cream/85">
+      <pre className="mt-4 overflow-x-auto rounded-2xl bg-brand-deep p-5 text-[11.5px] leading-relaxed text-brand-cream/85">
 {`minimize    cᵀx                      cost per day, c = $ per 100 g as eaten${
-          realistic && includeWaste ? " (incl. waste)" : ""
-        }
+        realistic && includeWaste ? " (incl. waste)" : ""
+      }
 subject to  b_min ≤ A·x ≤ b_max      A is ${nutrientCount} nutrients × ${result.model.foods.length} foods allowed by the ${result.diet} diet
 ${
   realistic
@@ -212,13 +231,18 @@ Simplex: ${result.pivots} pivots (Gauss-Jordan row operations). ${chosen.length}
               <td className={tdClass}>cᵀx</td>
               <td className={tdClass} />
               <td className={tdClass} />
-              <td className={cn(tdClass, numeric, "font-mono")}>
-                ${result.costPerDay.toFixed(2)}
-              </td>
+              <td className={cn(tdClass, numeric, "font-mono")}>{result.costPerDay.toFixed(2)}</td>
             </tr>
           </tbody>
         </table>
       </div>
-    </details>
+
+      <p className="mt-4 text-[12px] leading-relaxed text-brand-ink/55">
+        Targets: IOM Estimated Energy Requirement and Dietary Reference Intakes, the same equations
+        as the Calculator tab. Nutrients: USDA SR28. Prices: Walmart, Oct 2026, or BLS U.S. city
+        averages. Amounts are as eaten — cooked rice, roasted chicken — and the shopping list
+        converts them back to what you buy.
+      </p>
+    </>
   );
 }
