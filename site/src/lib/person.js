@@ -25,7 +25,38 @@ export const DEFAULT_FORM = {
   goal: "maintain",
 };
 
+/** A person with nothing filled in. Restoring onto this keeps blanks blank. */
+export const EMPTY_PERSON = {
+  units: "imperial",
+  sex: null,
+  age: "",
+  ft: "",
+  inch: "",
+  cm: "",
+  lb: "",
+  kg: "",
+  activityId: "active",
+  goal: "maintain",
+};
+
 const FIELDS = Object.keys(DEFAULT_FORM);
+
+const blank = (v) => v == null || String(v).trim() === "";
+
+/**
+ * Which of the four things the equations need are simply not filled in yet.
+ * This is deliberately separate from validation: "no weight yet" and "a weight
+ * of 900 lb" are different situations and the planner answers them differently.
+ */
+export function missingFields(form) {
+  const metric = form.units === "metric";
+  const missing = [];
+  if (blank(form.sex)) missing.push("sex");
+  if (blank(form.age)) missing.push("age");
+  if (blank(metric ? form.cm : form.ft)) missing.push("height");
+  if (blank(metric ? form.kg : form.lb)) missing.push("weight");
+  return missing;
+}
 
 /** Read the stored person. Call from an effect; returns null on the server. */
 export function readPerson() {
@@ -70,7 +101,7 @@ export function writePerson(form) {
  *     a placeholder, not something you typed, and it must not end up looking
  *     like your own numbers on the other tab.
  */
-export function useSharedPerson(fallback) {
+export function useSharedPerson(fallback, { restoreBase = fallback } = {}) {
   const [form, setForm] = useState(fallback);
   const [state, setState] = useState("loading"); // loading -> restored | fresh
   const touched = useRef(false);
@@ -78,7 +109,9 @@ export function useSharedPerson(fallback) {
   useEffect(() => {
     const saved = readPerson();
     if (saved) {
-      setForm((prev) => ({ ...prev, ...saved }));
+      // Onto restoreBase, not onto the current form: if the fallback is the
+      // example person, merging would quietly fill a blank height with 5'8".
+      setForm({ ...restoreBase, ...saved });
       setState("restored");
     } else {
       setState("fresh");

@@ -4,7 +4,7 @@ globalThis.window = { localStorage: {
   getItem: (k) => (store.has(k) ? store.get(k) : null),
   setItem: (k, v) => store.set(k, v),
 }};
-const { readPerson, writePerson, DEFAULT_FORM } =
+const { readPerson, writePerson, missingFields, DEFAULT_FORM, EMPTY_PERSON } =
   await import('../src/lib/person.js');
 
 let fails = 0;
@@ -24,11 +24,28 @@ store.clear();
 writePerson({ ...Object.fromEntries(Object.keys(DEFAULT_FORM).map(k => [k, ''])), age:'19' });
 const partial = readPerson();
 ok(partial && partial.age === '19', 'a half-filled form still saves');
-// A blank field must stay blank across the handoff. If it fell back to the
-// example's height/weight, the planner would quietly solve for the user's age
-// on a stranger's body; instead the planner flags the missing fields.
-ok({ ...DEFAULT_FORM, ...partial }.ft === '', 'a blank field stays blank, it does not inherit the example body');
 ok(partial.age === '19', 'the field they did fill still carries across');
+
+// --- the trap this design exists to avoid -------------------------------
+// Someone types only their age on the calculator and opens the planner.
+const restored = { ...EMPTY_PERSON, ...partial };
+ok(restored.age === '19', 'their age survives onto the planner');
+ok(restored.ft === '' && restored.lb === '', 'their blank height and weight stay blank');
+const mixed = { ...DEFAULT_FORM, ...partial };
+ok(mixed.ft === '' && mixed.lb === '',
+   'even merged onto the example, blanks written as blank stay blank');
+
+// missingFields is what lets the planner tell "not yet" from "wrong"
+ok(JSON.stringify(missingFields(restored)) === JSON.stringify(['sex', 'height', 'weight']),
+   'missingFields names exactly what is not filled in: ' + JSON.stringify(missingFields(restored)));
+ok(missingFields(DEFAULT_FORM).length === 0,
+   'the example person is complete, so a first-time visitor gets a plan');
+ok(missingFields(EMPTY_PERSON).length === 4, 'a blank person is missing all four');
+ok(JSON.stringify(missingFields({ ...EMPTY_PERSON, units: 'metric', sex: 'female', age: '30', cm: '170' }))
+     === JSON.stringify(['weight']),
+   'metric: a filled cm counts as a height, a blank kg counts as a missing weight');
+ok(missingFields({ ...DEFAULT_FORM, lb: '   ' }).includes('weight'),
+   'whitespace is not a weight');
 
 // nulls (the calculator starts with sex: null) must not become the string "null"
 store.clear();

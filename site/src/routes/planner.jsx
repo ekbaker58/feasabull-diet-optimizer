@@ -17,7 +17,7 @@ import {
   TargetCheck,
   ShowTheMath,
 } from "@/components/planner/PlannerTables";
-import { DEFAULT_FORM, useSharedPerson } from "@/lib/person";
+import { DEFAULT_FORM, EMPTY_PERSON, missingFields, useSharedPerson } from "@/lib/person";
 import { fmt, money } from "@/lib/plannerFormat";
 import { ACTIVITY_LEVELS } from "@/lib/dri";
 import { calculateTargets, personFromForm } from "@solver/personTargets";
@@ -69,7 +69,9 @@ const DIET_NAMES = DIETS.map((d) => d.name);
 function Planner() {
   // Same person as the Calculator tab. DEFAULT_FORM is the example the page
   // opens on; it is a placeholder until you touch it, and is never saved.
-  const { form, update: updateForm, isExample } = useSharedPerson(DEFAULT_FORM);
+  const { form, update: updateForm, isExample } = useSharedPerson(DEFAULT_FORM, {
+    restoreBase: EMPTY_PERSON,
+  });
   const [prefs, setPrefs] = useState(DEFAULT_PREFS);
 
   // Five Simplex solves run on every change. Deferring keeps typing smooth.
@@ -119,7 +121,8 @@ function Planner() {
             <PlannerForm
               form={form}
               prefs={prefs}
-              errors={solved.errors}
+              errors={solved.invalid}
+              missing={solved.missing}
               foodGroups={FOOD_GROUPS}
               dietNames={DIET_NAMES}
               dietNote={dietNote}
@@ -129,7 +132,7 @@ function Planner() {
           </div>
 
           <section aria-live="polite" className="space-y-5">
-            <Results solved={solved} prefs={prefs} form={form} isExample={isExample} />
+            <Results solved={solved} prefs={prefs} form={form} showingExample={isExample || solved.mode === "example"} />
           </section>
         </div>
       </main>
@@ -138,23 +141,25 @@ function Planner() {
   );
 }
 
-function Results({ solved, prefs, form, isExample }) {
-  if (!solved.report) {
+function Results({ solved, prefs, form, showingExample }) {
+  // A value that cannot be right (an age of 2, a weight of 900 lb) is the only
+  // case with nothing to show: we would be guessing what was meant.
+  if (solved.mode === "invalid") {
     return (
-      <div className="rounded-[2rem] border border-dashed border-brand-green/30 bg-brand-mist/60 p-8">
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-green">
+      <div className="rounded-[2rem] border border-dashed border-red-700/30 bg-red-50/60 p-8">
+        <p className="text-[11.5px] font-bold uppercase tracking-[0.18em] text-red-700">
           Check the form
         </p>
         <h3 className="mt-3 font-display text-2xl font-extrabold tracking-tight text-brand-deep">
-          A couple of numbers need fixing.
+          That number doesn&apos;t look right.
         </h3>
         <ul className="mt-4 space-y-2">
-          {Object.values(solved.errors).map((message) => (
+          {Object.values(solved.invalid).map((message) => (
             <li
               key={message}
-              className="flex items-start gap-2.5 text-[13px] leading-snug text-brand-ink/65"
+              className="flex items-start gap-2.5 text-[13px] leading-snug text-brand-ink/70"
             >
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-gold" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-700" />
               {message}
             </li>
           ))}
@@ -173,7 +178,8 @@ function Results({ solved, prefs, form, isExample }) {
 
   return (
     <>
-      <PlannerTargets report={report} who={who} isExample={isExample} />
+      {solved.mode === "example" ? <NeedsInfo missing={solved.missing} /> : null}
+      <PlannerTargets report={report} who={who} isExample={showingExample} />
 
       {result.status !== "optimal" ? (
         <PlanInfeasible diet={prefs.diet} reasons={result.reasons} />
@@ -254,29 +260,78 @@ function Results({ solved, prefs, form, isExample }) {
   );
 }
 
+/**
+ * Something is not filled in yet. Rather than a dead end, the planner keeps
+ * showing a complete worked example -- clearly marked as one -- and says
+ * exactly what it still needs. It never mixes the two: the plan below is the
+ * example person end to end, not the visitor's age on the example's body.
+ */
+function NeedsInfo({ missing }) {
+  const names = { sex: "sex", age: "age", height: "height", weight: "weight" };
+  const list = missing.map((m) => names[m] || m);
+  const phrase =
+    list.length === 1
+      ? list[0]
+      : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
+
+  return (
+    <div className="flex flex-col gap-3 rounded-[2rem] border border-brand-gold bg-brand-gold/20 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+      <div>
+        <p className="text-[11.5px] font-bold uppercase tracking-[0.18em] text-brand-deep">
+          This is an example, not your plan
+        </p>
+        <p className="mt-1.5 text-[13.5px] leading-snug text-brand-ink/75">
+          Add your <strong className="font-bold text-brand-deep">{phrase}</strong> on the left and
+          every number below becomes yours. Nothing here is calculated from what you have entered
+          so far.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function Panel({ children }) {
   return (
     <div className="rounded-[2rem] border border-brand-ink/10 bg-white/65 p-6 sm:p-7">{children}</div>
   );
 }
 
-/** Form -> person -> targets -> the budget search. Pure, so useMemo can cache it. */
+const toPersonForm = (form) => ({
+  units: form.units === "metric" ? "metric" : "standard",
+  sex: form.sex,
+  age: form.age,
+  ft: form.ft,
+  inch: form.inch,
+  lb: form.lb,
+  cm: form.cm,
+  kg: form.kg,
+  activity: form.activityId,
+  goal: form.goal,
+});
+
+/**
+ * Form -> person -> targets -> the budget search. Pure, so useMemo can cache it.
+ *
+ * Three outcomes, and the distinction matters: a blank field is not an error,
+ * and a wrong value is not a blank. Blank -> show the example, ask for what is
+ * missing. Wrong -> show nothing and say so. Complete -> their own plan.
+ */
 function solve(form, prefs) {
-  const { errors, person } = personFromForm({
-    units: form.units === "metric" ? "metric" : "standard",
-    sex: form.sex,
-    age: form.age,
-    ft: form.ft,
-    inch: form.inch,
-    lb: form.lb,
-    cm: form.cm,
-    kg: form.kg,
-    activity: form.activityId,
-    goal: form.goal,
-  });
+  const missing = missingFields(form);
+  const { errors } = personFromForm(toPersonForm(form));
+  // Validation complains about blanks too; those are already covered by `missing`.
+  const invalid = Object.fromEntries(
+    Object.entries(errors).filter(([key]) => !missing.includes(key)),
+  );
 
-  if (Object.keys(errors).length) return { errors, report: null };
+  if (Object.keys(invalid).length) return { mode: "invalid", invalid, missing, report: null };
+  if (missing.length) return { mode: "example", invalid: {}, missing, ...runPlan(DEFAULT_FORM, prefs) };
+  return { mode: "own", invalid: {}, missing: [], ...runPlan(form, prefs) };
+}
 
+/** Solve for one complete person. */
+function runPlan(form, prefs) {
+  const { person } = personFromForm(toPersonForm(form));
   const report = calculateTargets(person);
   const budget = planWithBudget(
     report.optimizerTargets,
@@ -295,7 +350,6 @@ function solve(form, prefs) {
   const weight = form.units === "metric" ? `${person.weightKg} kg` : `${form.lb} lb`;
 
   return {
-    errors,
     report,
     budget,
     usda: usdaFoodPlans(person.age, person.sex),

@@ -3,24 +3,12 @@ import { Link } from "@tanstack/react-router";
 import { CalculatorForm } from "@/components/CalculatorForm";
 import { Report } from "@/components/Report";
 import { ACTIVITY_LEVELS, buildPlan, validateForm } from "@/lib/dri";
-import { useSharedPerson } from "@/lib/person";
+import { EMPTY_PERSON, useSharedPerson } from "@/lib/person";
 
-const EMPTY_FORM = {
-  units: "imperial",
-  sex: null,
-  age: "",
-  ft: "",
-  inch: "",
-  cm: "",
-  lb: "",
-  kg: "",
-  activityId: "active",
-  goal: "maintain",
-};
 
 export function Calculator() {
   // The person is shared with the Meal planner tab and saved as you type.
-  const { form, update: updatePerson, restored } = useSharedPerson(EMPTY_FORM);
+  const { form, update: updatePerson, restored } = useSharedPerson(EMPTY_PERSON);
   const [errors, setErrors] = useState({});
   const [metrics, setMetrics] = useState(null);
   const resultsRef = useRef(null);

@@ -8,8 +8,21 @@ import { ACTIVITY_LEVELS, GOALS } from "@/lib/dri";
  * foods they refuse, the weekly budget and which model to solve. It updates
  * live — every change re-solves — so there is no submit button.
  */
-export function PlannerForm({ form, prefs, errors, foodGroups, dietNames, dietNote, onForm, onPrefs }) {
+export function PlannerForm({
+  form,
+  prefs,
+  errors,
+  missing = [],
+  foodGroups,
+  dietNames,
+  dietNote,
+  onForm,
+  onPrefs,
+}) {
   const isMetric = form.units === "metric";
+  // A field that is simply not filled in yet is marked, not errored.
+  const hintFor = (key, unit) =>
+    missing.includes(key) ? <Needed unit={unit} /> : unit;
   const excluded = prefs.exclude.length;
 
   const toggleFood = (id) =>
@@ -37,7 +50,7 @@ export function PlannerForm({ form, prefs, errors, foodGroups, dietNames, dietNo
           />
         </Field>
 
-        <Field label="Sex" error={errors.sex}>
+        <Field label="Sex" hint={hintFor("sex")} error={errors.sex}>
           <SegmentedControl
             ariaLabel="Sex"
             value={form.sex}
@@ -50,7 +63,7 @@ export function PlannerForm({ form, prefs, errors, foodGroups, dietNames, dietNo
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Age" hint="years" error={errors.age}>
+          <Field label="Age" hint={hintFor("age", "years")} error={errors.age}>
             <Input
               type="number"
               inputMode="numeric"
@@ -62,7 +75,7 @@ export function PlannerForm({ form, prefs, errors, foodGroups, dietNames, dietNo
           </Field>
 
           {isMetric ? (
-            <Field label="Weight" hint="kg" error={errors.weight}>
+            <Field label="Weight" hint={hintFor("weight", "kg")} error={errors.weight}>
               <Input
                 type="number"
                 inputMode="decimal"
@@ -74,7 +87,7 @@ export function PlannerForm({ form, prefs, errors, foodGroups, dietNames, dietNo
               />
             </Field>
           ) : (
-            <Field label="Weight" hint="lb" error={errors.weight}>
+            <Field label="Weight" hint={hintFor("weight", "lb")} error={errors.weight}>
               <Input
                 type="number"
                 inputMode="numeric"
@@ -88,7 +101,7 @@ export function PlannerForm({ form, prefs, errors, foodGroups, dietNames, dietNo
         </div>
 
         {isMetric ? (
-          <Field label="Height" hint="cm" error={errors.height}>
+          <Field label="Height" hint={hintFor("height", "cm")} error={errors.height}>
             <Input
               type="number"
               inputMode="numeric"
@@ -99,7 +112,7 @@ export function PlannerForm({ form, prefs, errors, foodGroups, dietNames, dietNo
             />
           </Field>
         ) : (
-          <Field label="Height" error={errors.height}>
+          <Field label="Height" hint={hintFor("height")} error={errors.height}>
             <div className="grid grid-cols-2 gap-4">
               <Input
                 type="number"
@@ -320,5 +333,17 @@ export function PlannerForm({ form, prefs, errors, foodGroups, dietNames, dietNo
         </p>
       </div>
     </form>
+  );
+}
+
+/** "You still need to fill this in" — gold, not red. It is not a mistake. */
+function Needed({ unit }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="rounded-full bg-brand-gold px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.1em] text-brand-deep">
+        needed
+      </span>
+      {unit ? <span>{unit}</span> : null}
+    </span>
   );
 }
