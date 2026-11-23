@@ -1,7 +1,9 @@
 import { useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { CalculatorForm } from "@/components/CalculatorForm";
 import { Report } from "@/components/Report";
 import { ACTIVITY_LEVELS, buildPlan, validateForm } from "@/lib/dri";
+import { fromCalculatorForm, writePerson } from "@/lib/person";
 
 const EMPTY_FORM = {
   units: "imperial",
@@ -44,6 +46,8 @@ export function Calculator() {
 
     const isFirstResult = !metrics;
     setMetrics(nextMetrics);
+    // Hand the same six numbers to the Meal planner tab.
+    writePerson(fromCalculatorForm(form));
 
     // Only pull focus down to the report the first time it appears.
     if (isFirstResult) {
@@ -107,7 +111,36 @@ export function Calculator() {
             resultsRef={resultsRef}
           />
         </div>
+
+        {plan ? <PlannerHandoff calories={plan.calories} /> : null}
       </div>
     </section>
+  );
+}
+
+/** Step 2 is done; this is the door to step 3. */
+function PlannerHandoff({ calories }) {
+  return (
+    <div className="mt-5 flex flex-col gap-4 rounded-[2rem] border border-brand-green/25 bg-brand-green/8 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-green">
+          Next step
+        </p>
+        <h3 className="mt-2 font-display text-2xl font-extrabold leading-tight tracking-tight text-brand-deep">
+          Now turn {calories} kcal into actual food.
+        </h3>
+        <p className="mt-2 max-w-lg text-[13px] leading-relaxed text-brand-ink/60">
+          The meal planner takes these targets and solves a linear program over 71 foods for the
+          cheapest day that meets every one of them — with a shopping list and a weekly budget.
+        </p>
+      </div>
+      <Link
+        to="/planner"
+        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-brand-deep px-6 py-4 text-[11px] font-bold uppercase tracking-[0.16em] text-brand-cream transition-colors hover:bg-brand-green"
+      >
+        Build my meal plan
+        <span aria-hidden="true">→</span>
+      </Link>
+    </div>
   );
 }

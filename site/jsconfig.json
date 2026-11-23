@@ -5,8 +5,17 @@
     "moduleResolution": "Bundler",
     "target": "ES2022",
     "baseUrl": ".",
-    "paths": { "@/*": ["./src/*"] },
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@solver/*": [
+        "../src/lib/*"
+      ]
+    },
     "checkJs": false
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }

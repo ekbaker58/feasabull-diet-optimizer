@@ -4,67 +4,51 @@
  *
  * Source: Dietary Reference Intakes for Energy, Macronutrients, Vitamins and
  * Minerals (National Academies of Sciences, Engineering, and Medicine).
+ *
+ * The energy equation is NOT implemented here. It lives in the repo root's
+ * src/lib/personTargets.js, which the meal planner, the spreadsheet and the
+ * test suite all use, so the Calculator tab and the Meal planner tab can never
+ * disagree about a person's calories. That module applies the IOM 2005
+ * physical-activity coefficients for the person's OWN sex. The Base44
+ * deployment this app was recreated from applies the men's coefficients to
+ * everyone and adds +20 instead of +25 kcal for teen girls, which is off by
+ * -80 to +340 kcal for women and girls. See docs/HOW_IT_WORKS.md.
  */
 
-export const ACTIVITY_LEVELS = [
-  {
-    id: "inactive",
-    label: "Inactive",
-    blurb: "Mostly sitting — classes, desk work, little movement.",
-    adultPA: 1.0,
-    youthPA: 1.0,
-  },
-  {
-    id: "low",
-    label: "Low active",
-    blurb: "Walking across campus, light exercise a few days a week.",
-    adultPA: 1.11,
-    youthPA: 1.13,
-  },
-  {
-    id: "active",
-    label: "Active",
-    blurb: "Moderate exercise 3–5 days a week, or an active job.",
-    adultPA: 1.25,
-    youthPA: 1.26,
-  },
-  {
-    id: "very",
-    label: "Very active",
-    blurb: "Hard training 6–7 days a week, two-a-days or manual work.",
-    adultPA: 1.48,
-    youthPA: 1.42,
-  },
-];
+import {
+  eer,
+  PA_IOM,
+  ACTIVITY as ACTIVITY_META,
+  GOALS as PERSON_GOALS,
+} from "@solver/personTargets";
 
-export const GOALS = [
-  { id: "lose", label: "Lose fat", blurb: "About 0.5 lb a week", delta: -500 },
-  { id: "maintain", label: "Maintain", blurb: "Hold your current weight", delta: 0 },
-  { id: "build", label: "Build muscle", blurb: "Slow, lean surplus", delta: 350 },
-];
+/**
+ * Activity levels for the form. The IOM coefficients for both sexes are
+ * attached for display only — personTargets.js picks the right column itself.
+ */
+export const ACTIVITY_LEVELS = ACTIVITY_META.map((a) => ({
+  ...a,
+  pa: {
+    male: { adult: PA_IOM.male.adult[a.id], youth: PA_IOM.male.youth[a.id] },
+    female: { adult: PA_IOM.female.adult[a.id], youth: PA_IOM.female.youth[a.id] },
+  },
+}));
+
+export const GOALS = PERSON_GOALS;
+
+const ACTIVITY_IDS = new Set(ACTIVITY_META.map((a) => a.id));
 
 const round = (n) => Math.round(n);
 const roundTo10 = (n) => Math.round(n / 10) * 10;
 
 /**
- * Estimated Energy Requirement. Under 19s use the IOM youth equations, which
- * carry their own physical-activity coefficients plus an energy-deposition
- * allowance for growth.
+ * Estimated Energy Requirement, kcal/day (IOM 2005). Under 19s use the youth
+ * equations, which carry their own coefficients plus a growth allowance.
+ * One implementation, shared with the planner.
  */
 export function estimateEnergyRequirement({ sex, age, heightCm, weightKg, activityId }) {
-  const activity = ACTIVITY_LEVELS.find((a) => a.id === activityId) ?? ACTIVITY_LEVELS[2];
-  const heightM = heightCm / 100;
-  const kg = weightKg;
-
-  if (age < 19) {
-    return sex === "male"
-      ? 88.5 - 61.9 * age + activity.youthPA * (26.7 * kg + 903 * heightM) + 25
-      : 135.3 - 30.8 * age + activity.youthPA * (10 * kg + 934 * heightM) + 20;
-  }
-
-  return sex === "male"
-    ? 662 - 9.53 * age + activity.adultPA * (15.91 * kg + 539.6 * heightM)
-    : 354 - 6.91 * age + activity.adultPA * (9.36 * kg + 726 * heightM);
+  const activity = ACTIVITY_IDS.has(activityId) ? activityId : "active";
+  return eer({ sex, age, heightCm, weightKg, activity });
 }
 
 export function calculateBmi({ heightCm, weightKg }) {

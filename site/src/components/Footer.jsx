@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 export function Footer() {
   return (
     <footer className="border-t border-brand-ink/10 bg-brand-deep text-brand-cream">
@@ -14,15 +16,18 @@ export function Footer() {
           </div>
 
           <div className="flex flex-wrap gap-x-8 gap-y-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-cream/55">
-            <a href="#calculator" className="transition-colors hover:text-brand-gold">
+            <Link to="/" hash="calculator" className="transition-colors hover:text-brand-gold">
               Calculator
-            </a>
-            <a href="#how" className="transition-colors hover:text-brand-gold">
+            </Link>
+            <Link to="/planner" className="transition-colors hover:text-brand-gold">
+              Meal planner
+            </Link>
+            <Link to="/" hash="how" className="transition-colors hover:text-brand-gold">
               Method
-            </a>
-            <a href="#nutrients" className="transition-colors hover:text-brand-gold">
+            </Link>
+            <Link to="/" hash="nutrients" className="transition-colors hover:text-brand-gold">
               Nutrients
-            </a>
+            </Link>
           </div>
         </div>
 
