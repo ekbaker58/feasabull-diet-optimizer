@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 44 48% 94%;
+    --foreground: 160 23% 10%;
+    --card: 44 50% 97%;
+    --card-foreground: 160 23% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 23% 10%;
+    --primary: 161 100% 20%;
+    --primary-foreground: 44 48% 96%;
+    --secondary: 43 37% 89%;
+    --secondary-foreground: 169 100% 10%;
+    --muted: 43 37% 90%;
+    --muted-foreground: 160 12% 34%;
+    --accent: 49 38% 69%;
+    --accent-foreground: 169 100% 10%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 160 12% 84%;
+    --input: 160 12% 84%;
+    --ring: 161 100% 20%;
+    --chart-1: 161 100% 20%;
+    --chart-2: 43 74% 66%;
+    --chart-3: 169 100% 10%;
+    --chart-4: 49 38% 69%;
+    --chart-5: 160 12% 50%;
+    --radius: 1rem;
+    --font-heading: "Archivo", ui-sans-serif, system-ui, sans-serif;
+    --font-body: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+    --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      "Liberation Mono", "Courier New", monospace;
+  }
+
+  .dark {
+    --background: 169 60% 6%;
+    --foreground: 44 48% 94%;
+    --card: 169 50% 9%;
+    --card-foreground: 44 48% 94%;
+    --popover: 169 50% 9%;
+    --popover-foreground: 44 48% 94%;
+    --primary: 49 38% 69%;
+    --primary-foreground: 169 100% 10%;
+    --secondary: 169 40% 14%;
+    --secondary-foreground: 44 48% 94%;
+    --muted: 169 40% 14%;
+    --muted-foreground: 44 20% 72%;
+    --accent: 161 60% 20%;
+    --accent-foreground: 44 48% 94%;
+    --destructive: 0 62.8% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 169 30% 20%;
+    --input: 169 30% 20%;
+    --ring: 49 38% 69%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  /* Instrument Serif only ships a 400 weight. */
+  .font-serif-display {
+    font-weight: 400;
+  }
+
+  /* Number inputs read as typed values here, not steppers. */
+  .hide-spin {
+    appearance: textfield;
+  }
+
+  .hide-spin::-webkit-outer-spin-button,
+  .hide-spin::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}

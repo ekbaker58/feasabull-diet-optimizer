@@ -20,11 +20,35 @@ subject to  b_min ≤ A·x ≤ b_max      nutrient targets (calories, fiber, cal
 `x` = grams of each food eaten per day (100 g units, as eaten) · `A` = USDA nutrient matrix (11 nutrients × 71 foods) ·
 `c` = $ per 100 g as eaten, including typical household food waste (Walmart prices) · full write-up in [`docs/MODEL.md`](docs/MODEL.md).
 
+## The site
+
+Two tabs, one app. The calculator works out your daily targets; the planner turns them into food.
+
+```bash
+cd site
+npm install          # once
+npm run dev          # http://localhost:5173
+```
+
+| Tab | Route | What it does | Math |
+|---|---|---|---|
+| **Calculator** | `/` | sex, age, height, weight, activity, goal → calorie target, macro split, BMI, a 19-row vitamin and mineral checklist | IOM 2005 EER + DRI tables |
+| **Meal planner** | `/planner` | those targets → the cheapest day of food that meets every one of them, by meal, with a shopping list and a weekly budget | **a linear program solved by the Simplex method** |
+
+Both tabs call the same `src/lib/personTargets.js`, so they can never disagree about a person's
+calories, and the planner imports the generated `src/lib/dietOptimizer.js` straight from the repo
+root (`@solver/*` in `site/vite.config.js`) — there is no second copy of the solver to keep in sync.
+Fill in the calculator and "Build my meal plan" carries the same six numbers across.
+
+`web/index.html` is still generated and still works: one self-contained file, no build step, no
+server. It is the offline/fallback copy of the planner and what the spreadsheet is checked against.
+
 ## What's in the repo
 | Path | What it is |
 |---|---|
 | `spreadsheet/FeasaBULL_Diet_Optimizer.xlsx` | The workbook: **Planner** (person → targets → answer by meal), **DRI Tables**, **Food Data** (71 foods sorted by group/type), **Diets** (8 presets), **Matrix Model** (A, M, G, c, u, x with MMULT), **Diet Comparison** (A·X for every diet + a typical day), **Optimality Proof** (B⁻¹, det, shadow prices), **Notes & Sources** |
-| `web/index.html` | **The connected planner page**: person → targets → meal plan, all in the browser. Open the file or host the `web/` folder |
+| `site/` | **The website**: TanStack Start + React. `/` is the calculator (recreated from the Base44 deployment), `/planner` is the meal planner. `npm run dev` inside `site/` |
+| `web/index.html` | **The standalone planner page**: person → targets → meal plan in one self-contained file. Open it directly; no build step, works offline |
 | `config/diets.json` | **The diets.** Edit this to add or change a diet; everything else rebuilds from it. Guide: [`docs/ADD_A_DIET.md`](docs/ADD_A_DIET.md) |
 | `docs/FOOD_LIST.md` | Every food, type, group and attribute name a diet can exclude (generated) |
 | `src/lib/personTargets.js` | Person → daily targets (same equations as the FeasaBULL site, with the IOM activity-coefficient fix) |
