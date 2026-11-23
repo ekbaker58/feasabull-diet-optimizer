@@ -24,10 +24,10 @@ export function PlannerTargets({ report, who }) {
         className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-brand-gold/20 blur-2xl"
       />
       <div className="relative">
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-gold">
+        <p className="text-[11.5px] font-bold uppercase tracking-[0.18em] text-brand-gold">
           Daily targets
         </p>
-        <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-cream/55">
+        <p className="mt-1.5 text-[12px] font-semibold uppercase tracking-[0.1em] text-brand-cream/70">
           {who}
         </p>
 

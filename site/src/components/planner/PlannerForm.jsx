@@ -258,7 +258,7 @@ export function PlannerForm({ form, prefs, errors, foodGroups, dietNames, dietNo
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             {foodGroups.map(([group, foods]) => (
               <div key={group}>
-                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-brand-green">
+                <p className="mb-1.5 text-[11.5px] font-bold uppercase tracking-[0.14em] text-brand-green">
                   {group}
                 </p>
                 <div className="flex flex-col gap-1">

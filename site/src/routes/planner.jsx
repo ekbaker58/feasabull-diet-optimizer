@@ -103,7 +103,7 @@ function Planner() {
       <Header />
       <main className="mx-auto max-w-6xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
         <header className="max-w-2xl">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-brand-green">
+          <p className="text-[11.5px] font-bold uppercase tracking-[0.18em] text-brand-green">
             Step 3 · Linear programming
           </p>
           <h1 className="mt-3 font-display text-4xl font-black leading-[1.05] tracking-[-0.03em] text-brand-deep sm:text-5xl">
@@ -117,7 +117,7 @@ function Planner() {
             {FOODS.length} foods. The Simplex method finds the lowest-cost plan that meets every
             nutrient target, follows the Dietary Guidelines servings and fits your weekly budget.
           </p>
-          <ol className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-ink/45">
+          <ol className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-[11.5px] font-bold uppercase tracking-[0.12em] text-brand-ink/55">
             <li className="rounded-full bg-white/70 px-3 py-1.5">1 · You</li>
             <li aria-hidden="true">→</li>
             <li className="rounded-full bg-white/70 px-3 py-1.5">2 · Targets (EER + DRI)</li>

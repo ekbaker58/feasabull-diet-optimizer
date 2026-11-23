@@ -32,7 +32,7 @@ export function BudgetLevels({ levels, chosen, budget }) {
                     ? "None (cheapest)"
                     : `≤ ${pct(level.variety)} of a group from one food`}
                   {isChosen ? (
-                    <span className="ml-2 text-[10px] uppercase tracking-[0.12em] text-brand-green">
+                    <span className="ml-2 text-[11px] uppercase tracking-[0.1em] text-brand-green">
                       ← your plan
                     </span>
                   ) : null}
@@ -80,7 +80,7 @@ export function ShoppingList({ shopping, foodsById, metric }) {
             <tr key={item.id}>
               <td className={tdClass}>
                 <span className="font-semibold text-brand-deep">{item.food}</span>
-                <span className="mt-0.5 block text-[10px] text-brand-ink/40">
+                <span className="mt-0.5 block text-[11.5px] text-brand-ink/55">
                   {foodsById.get(item.id)?.product || ""} · {money(item.price)}
                 </span>
               </td>
@@ -151,7 +151,7 @@ export function ShowTheMath({ result, targets, realistic, includeWaste, nutrient
   return (
     <details className="group rounded-[2rem] border border-brand-ink/10 bg-white/55 p-6 sm:p-7">
       <summary className="flex cursor-pointer items-center justify-between gap-3 marker:content-['']">
-        <span className="font-display text-xl font-extrabold tracking-tight text-brand-deep">
+        <span className="font-display text-2xl font-extrabold tracking-tight text-brand-deep sm:text-[1.7rem]">
           Show the math
         </span>
         <span
