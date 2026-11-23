@@ -6,7 +6,7 @@ import { ACTIVITY_LEVELS, buildPlan, validateForm } from "@/lib/dri";
 import { EMPTY_PERSON, useSharedPerson } from "@/lib/person";
 
 
-export function Calculator() {
+export function Calculator({ onReportRestored }) {
   // The person is shared with the Meal planner tab and saved as you type.
   const { form, update: updatePerson, restored } = useSharedPerson(EMPTY_PERSON);
   const [errors, setErrors] = useState({});
@@ -15,12 +15,25 @@ export function Calculator() {
 
   // Coming back with saved numbers: fill the form AND show the report, so
   // there is nothing to re-click.
+  const justRestored = useRef(false);
+
   useEffect(() => {
     if (!restored) return;
     const { metrics: saved } = validateForm(form);
-    if (saved) setMetrics(saved);
+    if (saved) {
+      setMetrics(saved);
+      justRestored.current = true;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restored]);
+
+  // The restored report has just grown the page, pushing #how and #nutrients
+  // down past wherever the browser already scrolled to. Put them back.
+  useEffect(() => {
+    if (!justRestored.current || !metrics) return;
+    justRestored.current = false;
+    onReportRestored?.();
+  }, [metrics, onReportRestored]);
 
   // Goal changes re-derive straight from the committed metrics, so the goal
   // pills in the report retarget without a resubmit.

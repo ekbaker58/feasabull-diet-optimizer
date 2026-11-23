@@ -4,6 +4,7 @@ import { Hero } from "@/components/Hero";
 import { Calculator } from "@/components/Calculator";
 import { Method } from "@/components/Method";
 import { Footer } from "@/components/Footer";
+import { scrollToHash } from "@/lib/hashScroll";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -15,7 +16,7 @@ function Home() {
       <Header />
       <main>
         <Hero />
-        <Calculator />
+        <Calculator onReportRestored={scrollToHash} />
         <Method />
       </main>
       <Footer />
