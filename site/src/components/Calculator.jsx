@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CalculatorForm } from "@/components/CalculatorForm";
 import { Report } from "@/components/Report";
 import { ACTIVITY_LEVELS, buildPlan, validateForm } from "@/lib/dri";
-import { fromCalculatorForm, writePerson } from "@/lib/person";
+import { useSharedPerson } from "@/lib/person";
 
 const EMPTY_FORM = {
   units: "imperial",
@@ -19,17 +19,27 @@ const EMPTY_FORM = {
 };
 
 export function Calculator() {
-  const [form, setForm] = useState(EMPTY_FORM);
+  // The person is shared with the Meal planner tab and saved as you type.
+  const { form, update: updatePerson, restored } = useSharedPerson(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [metrics, setMetrics] = useState(null);
   const resultsRef = useRef(null);
+
+  // Coming back with saved numbers: fill the form AND show the report, so
+  // there is nothing to re-click.
+  useEffect(() => {
+    if (!restored) return;
+    const { metrics: saved } = validateForm(form);
+    if (saved) setMetrics(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restored]);
 
   // Goal changes re-derive straight from the committed metrics, so the goal
   // pills in the report retarget without a resubmit.
   const plan = metrics ? buildPlan({ ...metrics, goal: form.goal }) : null;
 
   const update = (patch) => {
-    setForm((prev) => ({ ...prev, ...patch }));
+    updatePerson(patch);
     setErrors((prev) => {
       if (!Object.keys(prev).length) return prev;
       const next = { ...prev };
@@ -46,8 +56,6 @@ export function Calculator() {
 
     const isFirstResult = !metrics;
     setMetrics(nextMetrics);
-    // Hand the same six numbers to the Meal planner tab.
-    writePerson(fromCalculatorForm(form));
 
     // Only pull focus down to the report the first time it appears.
     if (isFirstResult) {

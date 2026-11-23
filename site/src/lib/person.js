@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+
 /**
  * The person the two tabs share.
  *
@@ -54,9 +56,53 @@ export function writePerson(form) {
   }
 }
 
-/** The calculator's form shape -> the planner's, and back. They already match. */
-export function fromCalculatorForm(form) {
-  const out = { ...DEFAULT_FORM };
-  for (const k of FIELDS) if (form[k] != null && form[k] !== "") out[k] = String(form[k]);
-  return out;
+/**
+ * The one person in the app. Both tabs mount this, so whatever you type in
+ * either one is in the other when you get there, and is still there when you
+ * come back.
+ *
+ * Three rules keep it honest:
+ *   - storage is touched in effects only, never in render or a state
+ *     initializer, so the server and the first client render agree;
+ *   - nothing is written until the saved person has been read back, or the
+ *     mount pass would stamp the fallback over it;
+ *   - an untouched fallback is never written. The planner's example person is
+ *     a placeholder, not something you typed, and it must not end up looking
+ *     like your own numbers on the other tab.
+ */
+export function useSharedPerson(fallback) {
+  const [form, setForm] = useState(fallback);
+  const [state, setState] = useState("loading"); // loading -> restored | fresh
+  const touched = useRef(false);
+
+  useEffect(() => {
+    const saved = readPerson();
+    if (saved) {
+      setForm((prev) => ({ ...prev, ...saved }));
+      setState("restored");
+    } else {
+      setState("fresh");
+    }
+  }, []);
+
+  const update = useCallback((patch) => {
+    touched.current = true;
+    setForm((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  useEffect(() => {
+    if (state === "loading") return undefined;          // the read has not landed yet
+    if (state === "fresh" && !touched.current) return undefined;  // untouched placeholder
+    const id = setTimeout(() => writePerson(form), 300);
+    return () => clearTimeout(id);
+  }, [form, state]);
+
+  return {
+    form,
+    update,
+    /** true once a previously saved person has been loaded into the form */
+    restored: state === "restored",
+    /** true while the form still holds an untouched fallback */
+    isExample: state === "fresh" && !touched.current,
+  };
 }

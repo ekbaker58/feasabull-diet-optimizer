@@ -7,7 +7,7 @@ import { fmt } from "@/lib/plannerFormat";
  * program. The Calculator tab already showed these in full, so here the two
  * that drive the plan sit on the surface and the rest open on request.
  */
-export function PlannerTargets({ report, who }) {
+export function PlannerTargets({ report, who, isExample = false }) {
   const [open, setOpen] = useState(false);
   const t = report.optimizerTargets;
 
@@ -28,13 +28,25 @@ export function PlannerTargets({ report, who }) {
       />
       <div className="relative">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <p className="text-[11.5px] font-bold uppercase tracking-[0.18em] text-brand-gold">
+          <p className="flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-[0.18em] text-brand-gold">
             Daily targets
+            {isExample ? (
+              <span className="rounded-full bg-brand-gold px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.1em] text-brand-deep">
+                Example
+              </span>
+            ) : null}
           </p>
           <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-brand-cream/70">
             {who}
           </p>
         </div>
+
+        {isExample ? (
+          <p className="mt-2 text-[12px] leading-snug text-brand-cream/60">
+            These are a sample person&apos;s numbers so you can see a finished plan. Change
+            anything on the left and they become yours.
+          </p>
+        ) : null}
 
         <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-2">
           <p className="flex items-baseline gap-1.5">

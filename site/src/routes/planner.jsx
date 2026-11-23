@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
+import { useMemo, useState, useDeferredValue } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -17,7 +17,7 @@ import {
   TargetCheck,
   ShowTheMath,
 } from "@/components/planner/PlannerTables";
-import { DEFAULT_FORM, readPerson, writePerson } from "@/lib/person";
+import { DEFAULT_FORM, useSharedPerson } from "@/lib/person";
 import { fmt, money } from "@/lib/plannerFormat";
 import { ACTIVITY_LEVELS } from "@/lib/dri";
 import { calculateTargets, personFromForm } from "@solver/personTargets";
@@ -67,24 +67,10 @@ const FOODS_BY_ID = new Map(FOODS.map((f) => [f.id, f]));
 const DIET_NAMES = DIETS.map((d) => d.name);
 
 function Planner() {
-  const [form, setForm] = useState(DEFAULT_FORM);
+  // Same person as the Calculator tab. DEFAULT_FORM is the example the page
+  // opens on; it is a placeholder until you touch it, and is never saved.
+  const { form, update: updateForm, isExample } = useSharedPerson(DEFAULT_FORM);
   const [prefs, setPrefs] = useState(DEFAULT_PREFS);
-
-  // Storage is browser-only: read it after hydration, never during render.
-  const hydrated = useRef(false);
-
-  useEffect(() => {
-    const saved = readPerson();
-    if (saved) setForm((prev) => ({ ...prev, ...saved }));
-    hydrated.current = true;
-  }, []);
-
-  // Only write once the saved person has been read, or the mount pass would
-  // stamp the defaults over it.
-  useEffect(() => {
-    if (!hydrated.current) return;
-    writePerson(form);
-  }, [form]);
 
   // Five Simplex solves run on every change. Deferring keeps typing smooth.
   const deferredForm = useDeferredValue(form);
@@ -92,7 +78,6 @@ function Planner() {
 
   const solved = useMemo(() => solve(deferredForm, deferredPrefs), [deferredForm, deferredPrefs]);
 
-  const updateForm = (patch) => setForm((prev) => ({ ...prev, ...patch }));
   const updatePrefs = (patch) => setPrefs((prev) => ({ ...prev, ...patch }));
 
   const diet = DIETS.find((d) => d.name === prefs.diet);
@@ -144,7 +129,7 @@ function Planner() {
           </div>
 
           <section aria-live="polite" className="space-y-5">
-            <Results solved={solved} prefs={prefs} form={form} />
+            <Results solved={solved} prefs={prefs} form={form} isExample={isExample} />
           </section>
         </div>
       </main>
@@ -153,7 +138,7 @@ function Planner() {
   );
 }
 
-function Results({ solved, prefs, form }) {
+function Results({ solved, prefs, form, isExample }) {
   if (!solved.report) {
     return (
       <div className="rounded-[2rem] border border-dashed border-brand-green/30 bg-brand-mist/60 p-8">
@@ -188,7 +173,7 @@ function Results({ solved, prefs, form }) {
 
   return (
     <>
-      <PlannerTargets report={report} who={who} />
+      <PlannerTargets report={report} who={who} isExample={isExample} />
 
       {result.status !== "optimal" ? (
         <PlanInfeasible diet={prefs.diet} reasons={result.reasons} />
